@@ -1,6 +1,9 @@
 const express = require('express');
 const passport = require('passport');
+const jsonwebtoken = require('jsonwebtoken');
 const db = require('../models');
+const jwtOptions = require('../config/jwt');
+
 const router = express.Router();
 
 const defaultUserAttributes = [
@@ -44,15 +47,32 @@ router.post('/signin', (req, res, next) => {
         }
 
         // req.login 실행시 passport.serialize 실행
-        return req.login(user, async loginErr => {
+        return req.login(user, { session: false }, async loginErr => {
             if (loginErr) {
                 return next(loginErr);
             }
 
             try {
                 // const user = await findUserById(user.id);
+                const signOptions = {
+                    expiresIn: '7d',
+                    issuer: jwtOptions.issuer,
+                    audience: jwtOptions.audience,
+                    subject: 'userInfo'
+                };
+                
+                const payload = {
+                    id: user.id,
+                    username: user.username,
+                    displayName: user.displayName,
+                    email: user.email,
+                };
+                const token = jsonwebtoken.sign(
+                    payload, 
+                    jwtOptions.secret, 
+                    signOptions);
 
-                return res.json(user);
+                return res.json({ user, token });
             } catch (e) {
                 console.error(e);
                 return next(e);

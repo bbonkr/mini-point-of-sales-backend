@@ -16,6 +16,14 @@ if (config.use_env_variable) {
 }
 
 db.User = require('./User')(sequelize, Sequelize);
+db.Store = require('./Store')(sequelize, Sequelize);
+db.Customer = require('./Customer')(sequelize, Sequelize);
+db.Menu = require('./Menu')(sequelize, Sequelize);
+db.Order = require('./Order')(sequelize, Sequelize);
+db.OrderDetail = require('./OrderDetail')(sequelize, Sequelize);
+db.Payment = require('./Payment')(sequelize, Sequelize);
+db.StoreCustomer = require('./StoreCustomer')(sequelize, Sequelize);
+db.StoreAdministration = require('./StoreAdminitration')(sequelize, Sequelize);
 
 /**
  * passport store

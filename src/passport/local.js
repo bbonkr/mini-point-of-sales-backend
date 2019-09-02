@@ -7,15 +7,15 @@ module.exports = () => {
     passport.use(
         new LocalStrategy(
             {
-                usernameField: 'email',
+                usernameField: 'username',
                 passowrdField: 'password',
                 passReqToCallback: true,
                 session: false,
             },
-            async (req, email, password, done) => {
+            async (req, username, password, done) => {
                 try {
                     const user = await db.User.findOne({
-                        where: { email: email },
+                        where: { username: username },
                     });
 
                     if (!user) {
@@ -31,14 +31,18 @@ module.exports = () => {
                         password,
                         user.password,
                     );
-                    if (result) {
-                        // 비밀번호를 전송하면 안됩니다.
-                        delete user.password;
 
-                        return done(null, user);
+                    if (result) {
+                        const transferUser = await db.User.findOne({
+                            where: {id: user.id},
+                            attributes: ['id', 'username', 'displayName', 'email', 'photo']
+                        });
+
+                        return done(null, transferUser);
                     } else {
                         // TODO 시도 횟수 증가
                         return done(null, false, {
+                            code: 'ERR-007',
                             reason:
                                 'Please check your account info and try again.',
                         });

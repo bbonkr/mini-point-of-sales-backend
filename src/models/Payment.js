@@ -33,7 +33,7 @@ module.exports = (sequelize, DataTypes) => {
                 defaultValue: 0,
             },
             installment: {
-                type: DataTypes.installment,
+                type: DataTypes.INTEGER,
                 allowNull: false,
                 defaultValue: 0,
             },

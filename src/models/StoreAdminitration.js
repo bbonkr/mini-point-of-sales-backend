@@ -2,10 +2,16 @@ module.exports = (sequelize, DataTypes) => {
     const StoreAdministration = sequelize.define(
         'StoreAdministration',
         {
-            validAt: {
-                type: DataTypes.DATETIME,
+            // DataTypes.DATE:
+            // https://sequelize.org/master/class/lib/data-types.js~DATE.html
+            // 밀리세컨드 저장
+            validAt:{
+                type: DataTypes.DATE,
                 allowNull: false,
-                defaultValue: false,
+            },
+            validUntil: {
+                type: DataTypes.DATE,
+                allowNull: false,
             },
         },
         {

@@ -8,6 +8,7 @@ const passport = require('passport');
 const passportConfig = require('./passport');
 const dotenv = require('dotenv');
 const DatabaseSessionStore = require('./passport/databaseSessionStore');
+const jwtOptions = require('./config/jwt');
 
 const app = express();
 
@@ -74,8 +75,8 @@ app.get('*', (req, res) => {
 });
 
 // seed data
-const { seed } = require('./config/seed');
-seed();
+// const { seed } = require('./config/seed');
+// seed();
 
 app.listen(port, () => {
     console.log(`server is running on ${protocol}://${host}:${port}`);

@@ -1,0 +1,16 @@
+{
+    "verbose": true,
+    "watch": [
+        "config",
+        "middleware",
+        "models",
+        "passport",
+        "routes",
+        "index.js",
+        "nodemon.json"
+    ],
+    "ignore": ["*.test.js", "__snapshots__", "node_modules"],
+    "exec": "node index.js",
+    "ext": "js json",
+    "delay": 2500
+}
