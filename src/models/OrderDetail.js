@@ -38,6 +38,6 @@ module.exports = (sequelize, DataTypes) => {
         db.OrderDetail.belongsTo(db.Order);
         db.OrderDetail.belongsTo(db.Store);
     };
-    
+
     return OrderDetail;
 };

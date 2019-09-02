@@ -25,6 +25,6 @@ module.exports = (sequelize, DataTypes) => {
         db.Order.hasMany(db.OrderDetail);
         db.Order.hasMany(db.Payment);
     };
-    
+
     return Order;
 };

@@ -7,27 +7,27 @@ const expressSession = require('express-session');
 const passport = require('passport');
 const passportConfig = require('./passport');
 const dotenv = require('dotenv');
-const path = require('path');
 const DatabaseSessionStore = require('./passport/databaseSessionStore');
 
 const app = express();
 
 dotenv.config();
 
-const port = parseInt( process.env.PORT || '3000', 10);
+const port = parseInt(process.env.PORT || '3000', 10);
 const host = process.env.HOST || 'localhost';
 const protocol = process.env.PROTOCOL || 'http';
 
 const dev = process.env.NODE_ENV !== 'production';
 const prod = process.env.NODE_ENV === 'production';
 
-const { COOKIE_NAME } = require('./routes/constants');
+const cookieName = process.env.COOKIE_NAME;
 
 // logging
 app.use(morgan('dev'));
 
 db.sequelize.sync({
-    // If force is true, each Model will run DROP TABLE IF EXISTS, before it tries to create its own table
+    // If force is true, each Model will run DROP TABLE IF EXISTS,
+    // before it tries to create its own table
     force: false,
 });
 
@@ -52,7 +52,7 @@ app.use(
 app.use(cookieParser(process.env.COOKIE_SECRET));
 app.use(
     expressSession({
-        name: COOKIE_NAME,
+        name: cookieName,
         resave: false,
         saveUninitialized: false,
         secret: process.env.COOKIE_SECRET,

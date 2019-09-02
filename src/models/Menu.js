@@ -10,16 +10,16 @@ module.exports = (sequelize, DataTypes) => {
                 type: DataTypes.INTEGER,
                 allowNull: false,
             },
-            image:{
-                type:DataTypes.STRING(500),
+            image: {
+                type: DataTypes.STRING(500),
                 allowNull: true,
             },
             description: {
-                type:DataTypes.TEXT,
+                type: DataTypes.TEXT,
                 allowNull: true,
             },
-            point:{
-                type:DataTypes.INTEGER,
+            point: {
+                type: DataTypes.INTEGER,
                 allowNull: false,
                 defaultValue: 0,
             },
@@ -33,6 +33,6 @@ module.exports = (sequelize, DataTypes) => {
     Menu.associate = db => {
         db.Menu.belongsTo(db.Store);
     };
-    
+
     return Menu;
 };

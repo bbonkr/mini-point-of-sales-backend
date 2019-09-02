@@ -14,8 +14,8 @@ module.exports = (sequelize, DataTypes) => {
             },
             Amounts: {
                 type: DataTypes.INTEGER,
-                allowNull:false,
-                defaultValue:0,
+                allowNull: false,
+                defaultValue: 0,
             },
             value: {
                 type: DataTypes.INTEGER,
@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
                 allowNull: false,
                 defaultValue: 0,
             },
-            payMethod:{
+            payMethod: {
                 type: DataTypes.INTEGER,
                 allowNull: false,
                 defaultValue: 0,
@@ -56,6 +56,6 @@ module.exports = (sequelize, DataTypes) => {
         // TODO 필요할까?
         // db.Payment.hasMany(db.StoreCustomer);
     };
-    
+
     return Payment;
 };

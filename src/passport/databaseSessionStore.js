@@ -11,7 +11,7 @@ const Op = Sequelize.Op;
  * ```
  */
 class DatabaseSessionStore extends expressSession.Store {
-    constructor(config) {
+    constructor (config) {
         const options = {
             database: config.database,
             expiration:
@@ -30,7 +30,7 @@ class DatabaseSessionStore extends expressSession.Store {
         this.startClearExpiredSessions();
     }
 
-    destroy(sid, next) {
+    destroy (sid, next) {
         try {
             this.db.Session.findOne({ where: { sid: sid } })
                 .then(item => {
@@ -50,7 +50,7 @@ class DatabaseSessionStore extends expressSession.Store {
         }
     }
 
-    get(sid, next) {
+    get (sid, next) {
         try {
             this.db.Session.findOne({ where: { sid: sid } })
                 .then(item => {
@@ -78,7 +78,7 @@ class DatabaseSessionStore extends expressSession.Store {
         }
     }
 
-    set(sid, sess, next) {
+    set (sid, sess, next) {
         try {
             const expire = new Date().toJSON();
 
@@ -100,7 +100,7 @@ class DatabaseSessionStore extends expressSession.Store {
         }
     }
 
-    clearExpiredSessions() {
+    clearExpiredSessions () {
         this.db.Session.destroy({
             where: {
                 expire: {
@@ -110,7 +110,7 @@ class DatabaseSessionStore extends expressSession.Store {
         });
     }
 
-    startClearExpiredSessions() {
+    startClearExpiredSessions () {
         this._clearExpiredSessionsInterval = setInterval(
             this.clearExpiredSessions.bind(this),
             this.options.clearInterval

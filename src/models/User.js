@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
     );
 
     User.associate = db => {
-
+        db.User.hasMany(db.StoreAdministration);
     };
     return User;
 };

@@ -22,6 +22,6 @@ module.exports = (sequelize, DataTypes) => {
         db.Customer.hasMany(db.OrderDetail);
         db.Customer.hasMany(db.StoreCustomer);
     };
-    
+
     return Customer;
 };

@@ -19,6 +19,6 @@ module.exports = (sequelize, DataTypes) => {
         db.StoreCustomer.belongsTo(db.Customer);
         db.StoreCustomer.belongsTo(db.Payment);
     };
-    
+
     return StoreCustomer;
 };

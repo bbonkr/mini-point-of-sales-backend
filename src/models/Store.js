@@ -17,12 +17,13 @@ module.exports = (sequelize, DataTypes) => {
         },
     );
 
-    Store.associate = db => {
+    Store.associate = (db) => {
         db.Store.hasMany(db.Order);
         db.Store.hasMany(db.OrderDetail);
         db.Store.hasMany(db.StoreCustomer);
         db.Store.hasMany(db.Payment);
+        db.Store.hasMany(db.StoreAdministration);
     };
-    
+
     return Store;
 };
