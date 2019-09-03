@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const sequelizeConfig = {
+export const sequelizeConfig = {
     development: {
         username: process.env.DB_USERNAME,
         password: process.env.DB_PASSWORD,
@@ -30,7 +30,6 @@ const sequelizeConfig = {
     },
 };
 
-export default sequelizeConfig;
 
 // module.exports = {
 //     development: {

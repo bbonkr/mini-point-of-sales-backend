@@ -30,6 +30,7 @@
     "passport": "^0.4.0",
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
+    "reflect-metadata": "^0.1.13",
     "sequelize": "^5.17.2",
     "sequelize-typescript": "^1.0.0",
     "webpack": "^4.39.3"

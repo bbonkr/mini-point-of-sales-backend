@@ -1,15 +1,26 @@
 // const express = require('express');
 import express from 'express';
-const db = require('./models');
-const morgan = require('morgan');
-const cors = require('cors');
-const cookieParser = require('cookie-parser');
-const expressSession = require('express-session');
-const passport = require('passport');
-const passportConfig = require('./passport');
-const dotenv = require('dotenv');
-const DatabaseSessionStore = require('./passport/databaseSessionStore');
-const jwtOptions = require('./config/jwt');
+import { sequelize } from './models';
+// const db = require('./models');
+// const morgan = require('morgan');
+import morgan from 'morgan';
+import cors from 'cors'; 
+// const cors = require('cors');
+import cookieParser from 'cookie-parser';
+// const cookieParser = require('cookie-parser');
+// const expressSession = require('express-session');
+import expressSession from 'express-session';
+import passport from 'passport';
+// const passport = require('passport');
+// const passportConfig = require('./passport');
+import passportConfig from './passport';
+// const dotenv = require('dotenv');
+import dotenv from 'dotenv';
+// const DatabaseSessionStore = require('./passport/databaseSessionStore');
+import DatabaseSessionStore from './passport/databaseSessionStore';
+import { jwtOptions } from './config/jwt';
+import { DatabaseSessionStoreOptions } from './passport/DatabaseSessionStoreOptions';
+// const jwtOptions = require('./config/jwt');
 
 const app = express();
 
@@ -27,16 +38,18 @@ const cookieName = process.env.COOKIE_NAME;
 // logging
 app.use(morgan('dev'));
 
-db.sequelize.sync({
+sequelize.sync({
     // If force is true, each Model will run DROP TABLE IF EXISTS,
     // before it tries to create its own table
     force: false,
 });
 
+
+
 passportConfig();
 
-const dbSessionStore = new DatabaseSessionStore({
-    database: db,
+const dbSessionStore = new DatabaseSessionStore(<DatabaseSessionStoreOptions>{
+    // database: sequelize,
     expiration: 1000 * 60 * 60 * 24 * 90,
 });
 

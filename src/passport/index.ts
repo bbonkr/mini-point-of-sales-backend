@@ -1,10 +1,10 @@
-const passport = require('passport');
-const db = require('../models');
-const local = require('./local');
-const jwt = require('./jwt');
+import passport from 'passport';
+import local from './local';
+import jwt from './jwt';
+import { User } from '../models/User.model';
 
-module.exports = () => {
-    passport.serializeUser((user, done) => {
+export default () => {
+    passport.serializeUser((user: User, done) => {
         console.debug('passport.serializeUser');
         return done(null, user.id);
     });
@@ -12,7 +12,7 @@ module.exports = () => {
     passport.deserializeUser(async (id, done) => {
         console.debug('>>>> passport.deserializeUser');
         try {
-            const user = await db.User.findOne({
+            const user = await User.findOne({
                 where: {
                     id: id,
                 },

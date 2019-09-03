@@ -1,10 +1,9 @@
-const passport = require('passport');
-const { Strategy, ExtractJwt } = require('passport-jwt');
-const bcrypt = require('bcrypt');
-const db = require('../models');
-const jwtOptions = require('../config/jwt');
+import express from 'express';
+import passport from 'passport';
+import { Strategy, ExtractJwt } from 'passport-jwt';
+import { jwtOptions } from '../config/jwt';
 
-module.exports = () => {
+export default () => {
     const options = {
         ... jwtOptions,
         jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -12,7 +11,7 @@ module.exports = () => {
         passReqToCallback: true,
     };
     
-    const strategy = new Strategy(options, async (req, payload, done) => {
+    const strategy = new Strategy(options, async (req: express.Request, payload: any, done: any) => {
         try {
             done(null, payload, null);
             

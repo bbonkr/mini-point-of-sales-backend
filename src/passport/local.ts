@@ -1,29 +1,29 @@
-const passport = require('passport');
-const { Strategy: LocalStrategy } = require('passport-local');
-const bcrypt = require('bcrypt');
-const db = require('../models');
+import passport from 'passport';
+import express, {Request} from 'express';
+import { Strategy, IStrategyOptionsWithRequest, IVerifyOptions } from 'passport-local';
+import bcrypt from 'bcrypt';
+import { User } from '../models/User.model';
 
-module.exports = () => {
-    passport.use(
-        new LocalStrategy(
+export default () => {
+    passport.use(    
+        new Strategy(
             {
                 usernameField: 'username',
-                passowrdField: 'password',
+                passwordField: 'password',
                 passReqToCallback: true,
                 session: false,
             },
             async (req, username, password, done) => {
                 try {
-                    const user = await db.User.findOne({
+                    const user = await User.findOne({
                         where: { username: username },
                     });
 
                     if (!user) {
                         // TODO 시도 횟수 증가
                         // req.connection.remoteAddress
-                        return done(null, false, {
-                            reason:
-                                'Please check your account information and try again. Not exists email in our system.',
+                        return done(null, null, {
+                            message: 'Please check your account information and try again. Not exists email in our system.',
                         });
                     }
 
@@ -33,7 +33,7 @@ module.exports = () => {
                     );
 
                     if (result) {
-                        const transferUser = await db.User.findOne({
+                        const transferUser = await User.findOne({
                             where: {id: user.id},
                             attributes: ['id', 'username', 'displayName', 'email', 'photo']
                         });
@@ -42,9 +42,7 @@ module.exports = () => {
                     } else {
                         // TODO 시도 횟수 증가
                         return done(null, false, {
-                            code: 'ERR-007',
-                            reason:
-                                'Please check your account info and try again.',
+                            message: 'Please check your account info and try again.',
                         });
                     }
                 } catch (e) {
