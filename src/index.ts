@@ -1,4 +1,5 @@
-const express = require('express');
+// const express = require('express');
+import express from 'express';
 const db = require('./models');
 const morgan = require('morgan');
 const cors = require('cors');
@@ -70,7 +71,7 @@ app.use(passport.session());
 
 app.use('/api', require('./routes'));
 
-app.get('*', (req, res) => {
+app.get('*', (req: express.Request, res: express.Response) => {
     res.send('Hello');
 });
 
