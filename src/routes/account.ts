@@ -1,12 +1,19 @@
-const express = require('express');
-const passport = require('passport');
-const jsonwebtoken = require('jsonwebtoken');
-const db = require('../models');
-const jwtOptions = require('../config/jwt');
+import express, { Router } from 'express';
+import expressSession from 'express-session';
+import passport from 'passport';
+import jsonwebtoken from 'jsonwebtoken';
+import { jwtOptions } from '../config/jwt';
+import { User } from '../models/User.model';
+import { StoreAdministration } from '../models/StoreAdministration.model';
 
-const router = express.Router();
+type SessionRequest = express.Request & {
+    session?: Express.Session;
+    sessionID?: string;
+};
 
-const defaultUserAttributes = [
+const router: Router = express.Router();
+
+const defaultUserAttributes: Array<string>= [
     'id',
     'email',
     'username',
@@ -16,16 +23,11 @@ const defaultUserAttributes = [
 ];
 
 const findUserById = async (id) => {
-    const me = await db.User.findOne({
+    const me = await User.findOne({
         where: {
             id: id,
         },
-        include: [
-            {
-                model: db.StoreAdministration,
-                attributes: ['id'],
-            },
-        ],
+        include: [StoreAdministration],
         attributes: defaultUserAttributes,
     });
 
@@ -35,7 +37,7 @@ const findUserById = async (id) => {
 /**
  * 로그인
  */
-router.post('/signin', (req, res, next) => {
+router.post('/signin', (req: express.Request, res: express.Response, next: express.NextFunction) => {
     passport.authenticate('local', (err, user, info) => {
         if (err) {
             console.error(err);
@@ -84,11 +86,13 @@ router.post('/signin', (req, res, next) => {
 /**
  * 로그아웃
  */
-router.post('/signout', (req, res, next) => {
+router.post('/signout', (req: SessionRequest, res: express.Response, next: express.NextFunction) => {
     const cookieName = process.env.COOKIE_NAME;
     try {
         req.logout();
-        req.session && req.session.destroy();
+        
+        req.session && req.session.destroy((err)=>console.error(err));
+
         return res.clearCookie(cookieName).send('logout success.');
     } catch (e) {
         console.error(e);
@@ -96,4 +100,4 @@ router.post('/signout', (req, res, next) => {
     }
 });
 
-module.exports = router;
+export default router;

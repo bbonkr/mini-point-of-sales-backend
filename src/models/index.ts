@@ -1,23 +1,31 @@
-import { Sequelize } from 'sequelize-typescript';
-import { sequelizeConfig } from '../config/config';
+import { Sequelize, SequelizeOptions } from 'sequelize-typescript';
+import { sequelizeConfig, IDatabaseConfig, IDatabaseConfigItem } from '../config/config';
 import path from 'path';
 import { User } from './User.model';
 import { Store } from './Store.model';
 import { Session } from '../passport/Session.model';
+import { StoreAdministration } from './StoreAdministration.model';
 const env = process.env.NODE_ENV || 'development';
-const config = sequelizeConfig[env];
+const config: IDatabaseConfigItem = sequelizeConfig[env];
 
-export const sequelize = new Sequelize({
+console.debug('database config: ', config);
+
+const sequelizeOptions: SequelizeOptions = {
     ...config,
     models: [
-        __dirname + '/**/*.model.ts'
+        User,
+        Store,
+        Session,
+        StoreAdministration,
     ],
-    modelMatch: (filename, member) => {
-        
+    modelMatch: (filename: string, member: string): boolean => {
+        console.debug('filename-member: ',filename, member);
         if(path.dirname(filename).includes('dist')){
             return false;
         }
 
-        return filename.substring(0, filename.indexOf('.model')) === member.toLowerCase();
+        return filename.substring(0, filename.indexOf('.model')).toLowerCase() === member.toLowerCase();
     },
-});
+};
+
+export const sequelize = new Sequelize(sequelizeOptions);

@@ -1,32 +1,36 @@
-import passport from 'passport';
-import local from './local';
-import jwt from './jwt';
-import { User } from '../models/User.model';
+/**
+ * move to src/app.ts
+ */
 
-export default () => {
-    passport.serializeUser((user: User, done) => {
-        console.debug('passport.serializeUser');
-        return done(null, user.id);
-    });
+// import passport from 'passport';
+// import local from './local';
+// import jwt from './jwt';
+// import { User } from '../models/User.model';
 
-    passport.deserializeUser(async (id, done) => {
-        console.debug('>>>> passport.deserializeUser');
-        try {
-            const user = await User.findOne({
-                where: {
-                    id: id,
-                },
-                attributes: ['id', 'username', 'displayName', 'email', 'photo']
-            });
+// export default () => {
+//     passport.serializeUser((user: User, done) => {
+//         console.debug('passport.serializeUser');
+//         return done(null, user.id);
+//     });
 
-            return done(null, user);
-        } catch (e) {
-            console.error(e);
-            return done(e, null);
-        }
-    });
+//     passport.deserializeUser(async (id, done) => {
+//         console.debug('>>>> passport.deserializeUser');
+//         try {
+//             const user = await User.findOne({
+//                 where: {
+//                     id: id,
+//                 },
+//                 attributes: ['id', 'username', 'displayName', 'email', 'photo']
+//             });
 
-    local();
+//             return done(null, user);
+//         } catch (e) {
+//             console.error(e);
+//             return done(e, null);
+//         }
+//     });
 
-    jwt();
-};
+//     local();
+
+//     jwt();
+// };

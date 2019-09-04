@@ -1,11 +1,8 @@
 import expressSession from 'express-session';
 import Sequelize from 'sequelize';
-// import { db } from '../models'
-// import { Sequelize, } from 'sequelize-typescript';
-import { sequelize } from '../models';
-// const Sequelize = require('sequelize');
 import { DatabaseSessionStoreOptions } from './DatabaseSessionStoreOptions'
 import { Session } from './Session.model';
+
 const Op = Sequelize.Op;
 
 // const Op = sequelize.Sequelize;
@@ -20,90 +17,106 @@ const Op = Sequelize.Op;
  */
 export default class DatabaseSessionStore extends expressSession.Store {
     constructor (config: DatabaseSessionStoreOptions) {
+        super(config);
+
         const options = {
             expiration:
                 config.expiration || 1000 * 60 * 60 * 24 * 120 /** 120 days */,
             clearInterval:
                 config.clearInterval || 1000 * 60 * 30 /** 30 minutes */,
         };
-        super(options);
 
         this.options = options;
         this.startClearExpiredSessions();
     }
 
-    options: DatabaseSessionStoreOptions;
-    _clearExpiredSessionsInterval: NodeJS.Timeout;
+    private options: DatabaseSessionStoreOptions;
+    private _clearExpiredSessionsInterval: NodeJS.Timeout;
 
-    async destroy (sid, next) {
-        try {
-            const session = await Session.findOne({
-                where: {
-                    sid: sid
-                }
-            });
-
-            await session.destroy();
-        } catch (e) {
-            console.error(e);
-            return next(e);
-        }
-    }
-
-    async get (sid, next) {
-        try {
-            const session = await Session.findOne({ where: { sid: sid } });
-
-            if (!session) {
-                // new Error('Could not find session')
-                return next();
+    destroy = (sid: string, callback?: (err?: any) => void): void => {
+        Session.findOne({
+            where: {
+                sid: sid
             }
+        })
+        .then(session => session.destroy())
+        .catch(err => {
+            console.error(err);
+            if(callback){
+                callback(err);
+            }
+        });
+    };
 
+    get = (sid: string, callback: (err: any, session?: Express.SessionData | null) => void): void => {
+
+        Session
+        .findOne({ where: { sid: sid } })
+        .then(session => {
             const now = new Date();
-            if (session.expire < now) {
-                // new Error('The session has been expired.')
-                return next();
+            const expired = session.expire > now;
+            const err: Error | null = expired ? new Error('Session was expired.') : null;
+            const sessionData: Express.SessionData | null = expired ? null : <Express.SessionData>JSON.parse(session.sess);
+
+            console.debug('session: ', expired ? 'expired' : 'valid');
+
+            if(callback){
+                callback(err, sessionData);
             }
+        })
+        .catch(err => {
+            console.error(err);
 
-            return next(null, JSON.parse(session.sess));
-        } catch (e) {
-            console.error(e);
-            return next(e);
-        }
-    }
+            if(callback){
+                callback(err, null);
+            }
+        });
+    };
 
-    async set (sid, sess, next) {
-        try {
-            const expire = new Date().toJSON();
+    set = (sid: string, session: Express.SessionData, callback?: (err?: any) => void): void => {
+        const now = new Date();
+        const expireMiliseconds = now.setMilliseconds(now.getMilliseconds() + this.options.expiration);
+        const expire = new Date(expireMiliseconds);
 
-            const newSession = new Session({
-                sid: sid,
-                sess: JSON.stringify(sess),
-                expire: expire,
-            });
+        const newSession = new Session({
+            sid: sid,
+            sess: JSON.stringify(session),
+            expire: expire
+        });
 
-            await newSession.save();
+        newSession.save()
+        .then(session => {
+            console.debug('session created.');
+            if(callback){
+                callback(null);
+            }
+        })
+        .catch(err=> {
+            console.error(err);
+            if(callback){
+                callback(err);
+            }
+        });
+    };
 
-            return next();
-        } catch (e) {
-            console.error(e);
-            next(e);
-        }
-    }
-
-    async clearExpiredSessions () {
-        await Session.destroy({
+    private clearExpiredSessions(): void {
+        Session.destroy({
             where: {
                 expire: {
                     [Op.lte]: new Date()
-                },
-            },
+                }
+            }
+        })
+        .then(affected => {
+            console.debug(`${affected} expired session deleted.`);
+        })
+        .catch(err => {
+            console.error(err);
         });
-    }
+    };
     
-    startClearExpiredSessions () {
-        this._clearExpiredSessionsInterval = setInterval(        
-            () => this.clearExpiredSessions.bind(this),
+    private startClearExpiredSessions(): void {
+        this._clearExpiredSessionsInterval = setInterval(() => this.clearExpiredSessions.bind(this),
             this.options.clearInterval
         );
     }

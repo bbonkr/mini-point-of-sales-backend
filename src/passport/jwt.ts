@@ -2,6 +2,7 @@ import express from 'express';
 import passport from 'passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
 import { jwtOptions } from '../config/jwt';
+import { User } from '../models/User.model';
 
 export default () => {
     const options = {
@@ -13,7 +14,27 @@ export default () => {
     
     const strategy = new Strategy(options, async (req: express.Request, payload: any, done: any) => {
         try {
-            done(null, payload, null);
+            console.debug('jwt payload: ',payload);
+            const { username } =  payload;
+            
+            User.findOne({
+                where: {
+                    username: username
+                },
+                attributes: ['id', 'username', 'email', 'displayName']
+            })
+            .then(user => {
+                if(!user){
+                    throw new Error('could not find a account information.');
+                }
+                
+                req.user = user;
+
+                done(null, user, null);
+            })
+            .catch((err: Error) => {
+                done(err, null, { message: err.message });
+            });
             
         } catch (e) {
             console.error(e);
