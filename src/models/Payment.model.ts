@@ -1,5 +1,21 @@
-import { Table, Column, Model, HasMany, PrimaryKey, AutoIncrement, DataType, AllowNull, Comment, Default, BelongsToMany } from 'sequelize-typescript';
+import {
+    Table,
+    Column,
+    Model,
+    HasMany,
+    PrimaryKey,
+    AutoIncrement,
+    DataType,
+    AllowNull,
+    Comment,
+    Default,
+    BelongsToMany,
+    ForeignKey,
+    BelongsTo,
+} from 'sequelize-typescript';
 import { PaymentMethod } from '../@typings/enums/paymentMethod';
+import { Store } from './Store.model';
+import { Order } from './Order.model';
 
 @Table({
     modelName: 'Payment',
@@ -9,6 +25,12 @@ import { PaymentMethod } from '../@typings/enums/paymentMethod';
     collate: 'utf8mb4_general_ci',
 })
 export class Payment extends Model<Payment> {
+    @PrimaryKey
+    @Comment('식별자')
+    @AllowNull(false)
+    @AutoIncrement
+    @Column(DataType.INTEGER)
+    public id!: number;
 
     @AllowNull(false)
     @Comment('주문 금액')
@@ -20,7 +42,7 @@ export class Payment extends Model<Payment> {
     @Comment('사용 포인트')
     @Default(0)
     @Column(DataType.INTEGER.UNSIGNED)
-    public point!: number;
+    public pointUsed!: number;
 
     @AllowNull(false)
     @Comment('결재 금액')
@@ -50,11 +72,31 @@ export class Payment extends Model<Payment> {
     @Comment('할부 개월')
     @Default(0)
     @Column(DataType.INTEGER.UNSIGNED)
-    public installment!: number; 
+    public installment!: number;
+
+    @AllowNull(false)
+    @Comment('적립 포인트')
+    @Default(0)
+    @Column(DataType.INTEGER.UNSIGNED)
+    public pointEarned!: number;
 
     @AllowNull(false)
     @Comment('취소 여부')
     @Default(false)
     @Column(DataType.BOOLEAN)
     public isCancelled!: boolean;
+
+    @ForeignKey(() => Store)
+    @Column(DataType.INTEGER)
+    public storeId!: number;
+
+    @BelongsTo(() => Store)
+    public store!: Store;
+
+    @ForeignKey(() => Order)
+    @Column(DataType.INTEGER)
+    public orderId!: number;
+
+    @BelongsTo(() => Order)
+    public order!: Order;
 }

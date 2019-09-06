@@ -1,6 +1,20 @@
-import { Table, Column, Model, HasMany, PrimaryKey, AutoIncrement, DataType, AllowNull, Comment, Default, BelongsToMany } from 'sequelize-typescript';
+import {
+    Table,
+    Column,
+    Model,
+    HasMany,
+    PrimaryKey,
+    AutoIncrement,
+    DataType,
+    AllowNull,
+    Comment,
+    Default,
+    BelongsToMany,
+} from 'sequelize-typescript';
 import { Store } from './Store.model';
 import { StoreCustomer } from './StoreCustomer.model';
+import { Payment } from './Payment.model';
+import { CustomerPayment } from './CustomerPayment.model';
 
 @Table({
     modelName: 'Customer',
@@ -10,6 +24,12 @@ import { StoreCustomer } from './StoreCustomer.model';
     collate: 'utf8mb4_general_ci',
 })
 export class Customer extends Model<Customer> {
+    @PrimaryKey
+    @Comment('식별자')
+    @AllowNull(false)
+    @AutoIncrement
+    @Column(DataType.INTEGER)
+    public id!: number;
 
     @AllowNull(false)
     @Comment('휴대전화번호')
@@ -23,4 +43,7 @@ export class Customer extends Model<Customer> {
 
     @BelongsToMany(() => Store, () => StoreCustomer)
     public stores!: Store[];
+
+    @BelongsToMany(() => Payment, () => CustomerPayment)
+    public payments!: Payment[];
 }

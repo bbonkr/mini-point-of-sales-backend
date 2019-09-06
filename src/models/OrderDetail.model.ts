@@ -1,4 +1,20 @@
-import { Table, Column, Model, HasMany, PrimaryKey, AutoIncrement, DataType, AllowNull, Comment, Default, BelongsToMany } from 'sequelize-typescript';
+import {
+    Table,
+    Column,
+    Model,
+    HasMany,
+    PrimaryKey,
+    AutoIncrement,
+    DataType,
+    AllowNull,
+    Comment,
+    Default,
+    BelongsToMany,
+    ForeignKey,
+    BelongsTo,
+} from 'sequelize-typescript';
+import { Store } from './Store.model';
+import { Order } from './Order.model';
 
 @Table({
     modelName: 'OrderDetail',
@@ -8,6 +24,12 @@ import { Table, Column, Model, HasMany, PrimaryKey, AutoIncrement, DataType, All
     collate: 'utf8mb4_general_ci',
 })
 export class OrderDetail extends Model<OrderDetail> {
+    @PrimaryKey
+    @Comment('식별자')
+    @AllowNull(false)
+    @AutoIncrement
+    @Column(DataType.INTEGER)
+    public id!: number;
 
     @AllowNull(false)
     @Comment('메뉴 이름')
@@ -37,4 +59,18 @@ export class OrderDetail extends Model<OrderDetail> {
     @Default(false)
     @Column(DataType.BOOLEAN)
     public takeout!: boolean;
+
+    @ForeignKey(() => Store)
+    @Column(DataType.INTEGER)
+    public storeId!: number;
+
+    @BelongsTo(() => Store)
+    public store!: Store;
+
+    @ForeignKey(() => Order)
+    @Column(DataType.INTEGER)
+    public orderId!: number;
+
+    @BelongsTo(() => Order)
+    public order!: Order;
 }

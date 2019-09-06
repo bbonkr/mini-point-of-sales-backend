@@ -12,24 +12,26 @@ import {
     BelongsToMany,
     ForeignKey,
 } from 'sequelize-typescript';
-import { Store } from './Store.model';
 import { Customer } from './Customer.model';
+import { Payment } from './Payment.model';
 
 @Table({
-    modelName: 'StoreCustomer',
-    tableName: 'StoreCustomers',
+    modelName: 'CustomerPayment',
+    tableName: 'CustomerPayments',
     timestamps: true,
     charset: 'utf8mb4',
     collate: 'utf8mb4_general_ci',
 })
-export class StoreCustomer extends Model<StoreCustomer> {
+export class CustomerPayment extends Model<CustomerPayment> {
     @PrimaryKey
-    @ForeignKey(() => Store)
-    @Column(DataType.INTEGER)
-    public storeId!: number;
-
-    @PrimaryKey
+    @AllowNull(false)
     @ForeignKey(() => Customer)
     @Column(DataType.INTEGER)
     public customerId!: number;
+
+    @PrimaryKey
+    @AllowNull(false)
+    @ForeignKey(() => Payment)
+    @Column(DataType.INTEGER)
+    public paymentId!: number;
 }

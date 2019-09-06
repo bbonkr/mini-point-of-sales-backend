@@ -1,22 +1,6 @@
-export interface IJsonResult<T>{
-    success: boolean;
-    data: T | Array<T> | null;
-    message: string;
-}
+import { IJsonResult } from './IJsonResult';
 
 export class JsonResult<T> implements IJsonResult<T> {
-    public success: boolean;
-    public data: T | Array<T> | null;
-    public message: string;
-
-    constructor(value?: IJsonResult<T>){
-        if(value){
-            this.success = value.success;
-            this.data = value.data;
-            this.message = value.message;
-        }
-    }
-
     public static getEmptyResult(): JsonResult<object> {
         const result = new JsonResult<object>();
 
@@ -29,9 +13,21 @@ export class JsonResult<T> implements IJsonResult<T> {
 
     public static getErrorResult(err: Error): JsonResult<Error> {
         return new JsonResult({
-            success:  false,
+            success: false,
             data: err,
             message: err.message || err.toString(),
         });
+    }
+
+    public success: boolean;
+    public data?: T | T[] | null;
+    public message?: string;
+
+    constructor(value?: IJsonResult<T>) {
+        if (value) {
+            this.success = value.success;
+            this.data = value.data;
+            this.message = value.message;
+        }
     }
 }

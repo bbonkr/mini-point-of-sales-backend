@@ -1,4 +1,14 @@
-import { Model, Table, Column, ForeignKey, DataType, AllowNull, Comment } from 'sequelize-typescript';
+import {
+    Model,
+    Table,
+    Column,
+    ForeignKey,
+    DataType,
+    AllowNull,
+    Comment,
+    Default,
+    PrimaryKey,
+} from 'sequelize-typescript';
 import { User } from './User.model';
 import { Store } from './Store.model';
 
@@ -10,24 +20,27 @@ import { Store } from './Store.model';
     collate: 'utf8mb4_general_ci',
 })
 export class StoreAdministration extends Model<StoreAdministration> {
-    
+    @PrimaryKey
     @AllowNull(false)
     @ForeignKey(() => Store)
     @Column(DataType.INTEGER)
-    public storeId: number;
-    
+    public storeId!: number;
+
+    @PrimaryKey
     @AllowNull(false)
     @ForeignKey(() => User)
     @Column(DataType.INTEGER.UNSIGNED)
-    public userId: number;
-    
+    public userId!: number;
+
     @AllowNull(false)
-    @Comment('유효기간-시작')
+    @Comment('유효기간 - 시작')
+    @Default(new Date())
     @Column(DataType.DATE)
-    public validAt!: Date;    
-    
+    public validAt!: Date;
+
     @AllowNull(false)
-    @Comment('유효기간-종료')
+    @Comment('유효기간 - 종료')
+    @Default(new Date())
     @Column(DataType.DATE)
     public validUntil!: Date;
-} 
+}

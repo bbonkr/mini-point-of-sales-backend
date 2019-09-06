@@ -1,11 +1,15 @@
 import passport from 'passport';
-import express, {Request} from 'express';
-import { Strategy, IStrategyOptionsWithRequest, IVerifyOptions } from 'passport-local';
+import express, { Request } from 'express';
+import {
+    Strategy,
+    IStrategyOptionsWithRequest,
+    IVerifyOptions,
+} from 'passport-local';
 import bcrypt from 'bcrypt';
 import { User } from '../models/User.model';
 
 export default () => {
-    passport.use(    
+    passport.use(
         new Strategy(
             {
                 usernameField: 'username',
@@ -13,7 +17,16 @@ export default () => {
                 passReqToCallback: true,
                 session: false,
             },
-            async (req, username, password, done) => {
+            async (
+                req: express.Request,
+                username: string,
+                password: string,
+                done: (
+                    error: any,
+                    user?: User,
+                    options?: IVerifyOptions,
+                ) => void,
+            ) => {
                 try {
                     const user = await User.findOne({
                         where: { username: username },
@@ -23,7 +36,8 @@ export default () => {
                         // TODO 시도 횟수 증가
                         // req.connection.remoteAddress
                         return done(null, null, {
-                            message: 'Please check your account information and try again. Not exists email in our system.',
+                            message:
+                                'Please check your account information and try again. Not exists email in our system.',
                         });
                     }
 
@@ -33,16 +47,23 @@ export default () => {
                     );
 
                     if (result) {
-                        const transferUser = await User.findOne({
-                            where: {id: user.id},
-                            attributes: ['id', 'username', 'displayName', 'email', 'photo']
+                        const transferUser: User = await User.findOne({
+                            where: { id: user.id },
+                            attributes: [
+                                'id',
+                                'username',
+                                'displayName',
+                                'email',
+                                'photo',
+                            ],
                         });
 
                         return done(null, transferUser);
                     } else {
                         // TODO 시도 횟수 증가
-                        return done(null, false, {
-                            message: 'Please check your account info and try again.',
+                        return done(null, null, {
+                            message:
+                                'Please check your account info and try again.',
                         });
                     }
                 } catch (e) {

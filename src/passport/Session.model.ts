@@ -1,4 +1,10 @@
-import { Model, Table, Column, DataType, AllowNull } from 'sequelize-typescript';
+import {
+    Model,
+    Table,
+    Column,
+    DataType,
+    AllowNull,
+} from 'sequelize-typescript';
 
 @Table({
     modelName: 'Session',
@@ -8,18 +14,15 @@ import { Model, Table, Column, DataType, AllowNull } from 'sequelize-typescript'
     collate: 'utf8mb4_general_ci',
 })
 export class Session extends Model<Session> {
-    
     @AllowNull(false)
     @Column(DataType.STRING(1000))
-    public sid: string;
+    public sid!: string;
 
-    
     @AllowNull(false)
     @Column(DataType.TEXT)
-    public sess: string;
+    public sess!: string;
 
-    
     @AllowNull(false)
     @Column(DataType.DATE)
-    public expire: Date;
-};
+    public expire!: Date;
+}
