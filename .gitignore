@@ -331,3 +331,6 @@ ASALocalRun/
 
 # .env
 .env
+
+# build result
+dist/
