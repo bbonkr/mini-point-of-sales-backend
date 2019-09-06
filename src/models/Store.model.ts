@@ -12,6 +12,9 @@ import {
 } from 'sequelize-typescript';
 import { User } from './User.model';
 import { StoreAdministration } from './StoreAdministration.model';
+import { Customer } from './Customer.model';
+import { StoreCustomer } from './StoreCustomer.model';
+import { Menu } from './Menu.model';
 
 @Table({
     modelName: 'Store',
@@ -34,5 +37,11 @@ export class Store extends Model<Store> {
     public businessType!: number;
 
     @BelongsToMany(()=> User, () => StoreAdministration)
-    public users: User[];
+    public users!: User[];
+
+    @BelongsToMany(() => Customer, () => StoreCustomer)
+    public customers!: Customer[];
+
+    @HasMany(() => Menu)
+    public menus!: Menu[];
 };

@@ -45,8 +45,8 @@ export class User extends Model<User> {
     @AllowNull(true)
     @Comment('이미지 URL')
     @Column(DataType.STRING(500))
-    public photo!: string;
+    public photo?: string;
 
     @BelongsToMany(() => Store, () => StoreAdministration)
-    public stores: Store[];
+    public stores!: Store[];
 };
