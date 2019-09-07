@@ -335,3 +335,4 @@ ASALocalRun/
 # build result
 dist/
 bundle/
+*.tsbuildinfo
