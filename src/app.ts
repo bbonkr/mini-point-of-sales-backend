@@ -1,5 +1,4 @@
 import express from 'express';
-import bodyParse from 'body-parser';
 import cookieParser from 'cookie-parser';
 import expressSession from 'express-session';
 import morgan from 'morgan';
@@ -30,19 +29,24 @@ export default class App {
 
     public listen(): void {
         this.app.listen(this.port, () => {
-            console.log(`App is running on the port ${this.port}`);
+            console.log(`[APP] App is running on the port ${this.port}`);
         });
     }
 
     private initializeDatabaseConnection() {
         sequelize
             .sync({
-                // If force is true, each Model will run DROP TABLE IF EXISTS,
+                // If force is true, each DAO will do DROP TABLE IF EXISTS ...,
                 // before it tries to create its own table
                 force: false,
+                // If alter is true, each DAO will do ALTER TABLE ... CHANGE ... Alters tables to fit models.
+                // Not recommended for production use.
+                // Deletes data in columns that were removed or had their type changed in the model.
+                alter: false,
+
             })
             .then((_) => {
-                console.log('Database ready!');
+                console.log('[APP] Database ready!');
             });
     }
 

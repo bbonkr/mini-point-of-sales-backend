@@ -9,6 +9,7 @@ import {
     DataType,
     AllowNull,
     BelongsToMany,
+    Default,
 } from 'sequelize-typescript';
 import { User } from './User.model';
 import { StoreAdministration } from './StoreAdministration.model';
@@ -18,6 +19,7 @@ import { Menu } from './Menu.model';
 import { Order } from './Order.model';
 import { OrderDetail } from './OrderDetail.model';
 import { Payment } from './Payment.model';
+import { BusinessTypes } from '../@typings/enums/BusinessTypes';
 
 @Table({
     modelName: 'Store',
@@ -42,7 +44,19 @@ export class Store extends Model<Store> {
     @Comment('업종')
     @AllowNull(false)
     @Column(DataType.INTEGER.UNSIGNED)
-    public businessType!: number;
+    public businessType!: BusinessTypes;
+
+    @AllowNull(false)
+    @Comment('유효기간 - 시작')
+    @Default(new Date())
+    @Column(DataType.DATE)
+    public validAt!: Date;
+
+    @AllowNull(false)
+    @Comment('유효기간 - 종료')
+    @Default(new Date())
+    @Column(DataType.DATE)
+    public validUntil!: Date;
 
     @BelongsToMany(() => User, () => StoreAdministration)
     public users!: User[];
