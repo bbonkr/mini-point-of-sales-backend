@@ -12,6 +12,8 @@ import { Customer } from './Customer.model';
 import { CustomerPayment } from './CustomerPayment.model';
 import { Menu } from './Menu.model';
 import { IDatabaseConfigItem } from '../@typings/IDatabaseConfigItem';
+import { Role } from './Role.model';
+import { UserRole } from './UserRole.model';
 
 const env = process.env.NODE_ENV || 'development';
 const config: IDatabaseConfigItem = sequelizeConfig[env];
@@ -20,6 +22,7 @@ const sequelizeOptions: SequelizeOptions = {
     ...config,
     models: [
         User,
+        Role,
         Store,
         Customer,
         Session,
@@ -27,6 +30,7 @@ const sequelizeOptions: SequelizeOptions = {
         Order,
         OrderDetail,
         Payment,
+        UserRole,
         StoreAdministration,
         StoreCustomer,
         CustomerPayment,
