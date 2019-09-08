@@ -33,7 +33,7 @@
 
 ![ERD](./erd/mini-pos.png)
 
-> ERD는 [vuerd-front]](https://github.com/vuerd/vuerd-front) 프로젝트를 사용해서 작성되었습니다.
+> ERD는 [vuerd-front](https://github.com/vuerd/vuerd-front) 프로젝트를 사용해서 작성되었습니다.
 
 storeId 외래키는 저장소 최적화에서 사용합니다.
 
