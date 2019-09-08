@@ -4,11 +4,11 @@
 
 단순 메뉴를 판매하는 소매점에서 사용하는 판매시점정보관리 시스템
 
-	• 매장관리
-	• 메뉴관리
-	• 주문관리
-	• 고객관리
-	• 결재관리 - 이번 구현에서 제외
+    • 매장관리
+    • 메뉴관리
+    • 주문관리
+    • 고객관리
+    • 결재관리 - 이번 구현에서 제외
 
 ## 기능
 
@@ -31,10 +31,60 @@
 
 ## 설계
 
-엔티티간 관계를 생각해보면 아래와 같은 설계가 가능합니다.
+![ERD](./erd/mini-pos.png)
 
-![](./images/ERD-a.png)
+> ERD는 [vuerd-front]](https://github.com/vuerd/vuerd-front) 프로젝트를 사용해서 작성되었습니다.
 
-구현의 편의를 위해 타협해서 아래와 같은 설계로 진행합니다.
+storeId 외래키는 저장소 최적화에서 사용합니다.
 
-![](./images/ERD-b.png)
+## 실행
+
+### 개발모드
+
+저장소를 복제한 후 아래 명령으로 의존 패키지를 설치합니다.
+
+```bash
+$ npm install
+```
+
+프로젝트 디렉터리에 `.env` 파일을 작성합니다.
+
+> 필요한 정보는 `.env.sample` 파일을 참조하십시오.
+
+데이터베이스가 준비되면 아래 명령으로 실행합니다.
+
+```bash
+$ npm run dev
+```
+
+## API 목록
+
+### 계정
+
+작성방법 생각!
+
+```http
+POST: /api/account/signin
+```
+
+body
+
+```ts
+{
+    username: string;
+    password: string;
+}
+```
+
+response:
+
+```ts
+{
+	success: boolean
+	data?: {
+		user: User | null
+		token: string
+	},
+	message?: string
+}
+```
