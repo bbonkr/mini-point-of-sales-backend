@@ -4,6 +4,8 @@ import { Strategy, ExtractJwt } from 'passport-jwt';
 import { jwtOptions } from '../config/jwt';
 import { User } from '../models/User.model';
 import { IVerifyOptions } from 'passport-local';
+import { Role } from '../models/Role.model';
+import { Store } from '../models/Store.model';
 
 export default () => {
     const options = {
@@ -28,6 +30,7 @@ export default () => {
                         username: username,
                     },
                     attributes: ['id', 'username', 'email', 'displayName'],
+                    include: [{ model: Role }, { model: Store }],
                 })
                     .then((user) => {
                         if (!user) {
@@ -36,7 +39,12 @@ export default () => {
                             );
                         }
 
-                        req.user = user;
+                        req.user = {
+                            id: user.id,
+                            username: user.username,
+                        };
+                        req.userInfo = user;
+                        req.roles = user.roles;
 
                         done(null, user, null);
                     })

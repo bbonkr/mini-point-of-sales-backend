@@ -1,0 +1,15 @@
+{
+    "verbose": true,
+    "watch":[
+        "src",
+        "nodemon.json"
+    ],
+    "ignore": [
+        "dist",
+        "node_modules",
+        "*.test.js"
+    ],
+    "exec":"npm run start",
+    "ext":"ts",
+    "delay": 1000
+  }

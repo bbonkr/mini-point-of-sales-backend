@@ -2,13 +2,15 @@ import express from 'express';
 import passport from 'passport';
 import jsonwebtoken from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
-import { IControllerBase } from '../@typings/IControllerBase';
 import { jwtOptions } from '../config/jwt';
 import { SessionRequest } from '../@typings/SessionRequest';
 import { ControllerBase } from '../@typings/ControllerBase';
 import { User } from '../models/User.model';
 import { HttpStatusError } from '../@typings/HttpStatusError';
 import { JsonResult } from '../@typings/JsonResult';
+import { UserRole } from '../models/UserRole.model';
+import { Role } from '../models/Role.model';
+import { Roles } from '../@typings/enums/Roles';
 
 export default class AccountController extends ControllerBase {
     public getPath(): string {
@@ -119,123 +121,105 @@ export default class AccountController extends ControllerBase {
         }
     }
 
-    private register(
+    private async register(
         req: SessionRequest,
         res: express.Response,
         next: express.NextFunction,
-    ): any {
+    ): Promise<any> {
         const { username, password, email, displayName } = req.body;
 
         try {
             if ((username || '').trim().length === 0) {
-                throw new HttpStatusError(
-                    400,
-                    `Username does not allow empty value.`,
-                );
+                throw new HttpStatusError({
+                    code: 400,
+                    message: `Username does not allow empty value.`,
+                });
             }
 
             if ((password || '').trim().length === 0) {
-                throw new HttpStatusError(
-                    400,
-                    `Password does not allow empty value.`,
-                );
+                throw new HttpStatusError({
+                    code: 400,
+                    message: `Password does not allow empty value.`,
+                });
             }
 
             if ((email || '').trim().length === 0) {
-                throw new HttpStatusError(
-                    400,
-                    `Email does not allow empty value.`,
-                );
+                throw new HttpStatusError({
+                    code: 400,
+                    message: `Email does not allow empty value.`,
+                });
             }
 
             if ((displayName || '').trim().length === 0) {
-                throw new HttpStatusError(
-                    400,
-                    `DisplayName does not allow empty value.`,
-                );
-            }
-        } catch (err) {
-            let httpStatusError: HttpStatusError;
-            if (err instanceof HttpStatusError) {
-                httpStatusError = err as HttpStatusError;
-            } else {
-                httpStatusError = new HttpStatusError(500);
-            }
-
-            return res
-                .status(httpStatusError.code)
-                .json(
-                    JsonResult.getErrorResult(
-                        new Error(httpStatusError.message),
-                    ),
-                );
-        }
-
-        User.findAndCountAll({
-            where: {
-                username: username,
-            },
-        })
-            .then(({ count, rows }) => {
-                if (count > 0) {
-                    throw new HttpStatusError(
-                        409,
-                        `username ${username} used by other user.`,
-                    );
-                }
-            })
-            .then((_) => {
-                return User.findAndCountAll({
-                    where: {
-                        email: email,
-                    },
+                throw new HttpStatusError({
+                    code: 400,
+                    message: `DisplayName does not allow empty value.`,
                 });
-            })
-            .then(({ count, rows }) => {
-                if (count > 0) {
-                    throw new HttpStatusError(
-                        409,
-                        `email ${email} used by other user.`,
-                    );
-                }
-            })
-            .then((_) => {
-                return bcrypt.hash(password, 12);
-            })
-            .then((hashedPassword) => {
-                const newUser = new User({
+            }
+
+            const { count: countUsername, rows } = await User.findAndCountAll({
+                where: {
                     username: username,
-                    password: hashedPassword,
-                    email: email,
-                    displayName: displayName,
-                });
-
-                return newUser.save();
-            })
-            .then((user) => {
-                delete user.password;
-
-                return res.status(201).json(
-                    new JsonResult({
-                        success: true,
-                        data: { user },
-                    }),
-                );
-            })
-            .catch((err: Error) => {
-                console.error(err);
-                if (err instanceof HttpStatusError) {
-                    const httpStatusError = err as HttpStatusError;
-                    return res
-                        .status(httpStatusError.code)
-                        .json(
-                            JsonResult.getErrorResult(
-                                new Error(httpStatusError.message),
-                            ),
-                        );
-                } else {
-                    return next(err);
-                }
+                },
             });
+
+            if (countUsername > 0) {
+                throw new HttpStatusError({
+                    code: 409,
+                    message: `username ${username} used by other user.`,
+                });
+            }
+
+            const { count: countEmail } = await User.findAndCountAll({
+                where: {
+                    email: email,
+                },
+            });
+
+            if (countEmail > 0) {
+                throw new HttpStatusError({
+                    code: 409,
+                    message: `email ${email} used by other user.`,
+                });
+            }
+
+            const hashedPassword = await bcrypt.hash(password, 12);
+
+            const newUser = new User({
+                username: username,
+                password: hashedPassword,
+                email: email,
+                displayName: displayName,
+            });
+
+            // TODO send virify email.
+            const user = await newUser.save();
+
+            const role = await Role.findOne({
+                where: {
+                    name: Roles.MANAGER,
+                },
+            });
+
+            if (role) {
+                const userRole = new UserRole({
+                    userId: user.id,
+                    roleId: role.id,
+                });
+            } else {
+                throw new HttpStatusError({
+                    code: 500,
+                    message: 'Data corrupted. contact system admin',
+                });
+            }
+
+            return res.status(201).json(
+                new JsonResult({
+                    success: true,
+                }),
+            );
+        } catch (err) {
+            return next(err);
+        }
     }
 }

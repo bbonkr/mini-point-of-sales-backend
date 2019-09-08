@@ -7,6 +7,9 @@ import {
 } from 'passport-local';
 import bcrypt from 'bcrypt';
 import { User } from '../models/User.model';
+import { UserRole } from '../models/UserRole.model';
+import { Store } from '../models/Store.model';
+import { Role } from '../models/Role.model';
 
 export default () => {
     passport.use(
@@ -55,6 +58,10 @@ export default () => {
                                 'displayName',
                                 'email',
                                 'photo',
+                            ],
+                            include: [
+                                { model: Role, attributes: ['id', 'name'] },
+                                { model: Store, attributes: ['id', 'name'] },
                             ],
                         });
 

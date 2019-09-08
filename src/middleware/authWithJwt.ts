@@ -3,7 +3,7 @@ import express from 'express';
 import { JsonResult } from '../@typings/JsonResult';
 // const passport = require('passport');
 
-export const passportJwt = (
+export const authWithJwt = (
     req: express.Request,
     res: express.Response,
     next: express.NextFunction,

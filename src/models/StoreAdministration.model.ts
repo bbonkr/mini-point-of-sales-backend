@@ -31,16 +31,4 @@ export class StoreAdministration extends Model<StoreAdministration> {
     @ForeignKey(() => User)
     @Column(DataType.INTEGER.UNSIGNED)
     public userId!: number;
-
-    @AllowNull(false)
-    @Comment('유효기간 - 시작')
-    @Default(new Date())
-    @Column(DataType.DATE)
-    public validAt!: Date;
-
-    @AllowNull(false)
-    @Comment('유효기간 - 종료')
-    @Default(new Date())
-    @Column(DataType.DATE)
-    public validUntil!: Date;
 }

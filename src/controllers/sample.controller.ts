@@ -1,7 +1,8 @@
 import { ControllerBase } from '../@typings/ControllerBase';
 import express = require('express');
-import { passportJwt } from '../middleware/auth';
+import { authWithJwt } from '../middleware/authWithJwt';
 import { JsonResult } from '../@typings/JsonResult';
+import { authNeedsManager } from '../middleware/authAsRole';
 
 export default class SampleController extends ControllerBase {
     public getPath(): string {
@@ -10,7 +11,12 @@ export default class SampleController extends ControllerBase {
 
     protected initializeRoutes(): void {
         this.router.get('/', this.responseOk);
-        this.router.get('/loggedin', passportJwt, this.loggedIn);
+        this.router.get(
+            '/loggedin',
+            authWithJwt,
+            authNeedsManager,
+            this.loggedIn,
+        );
     }
 
     private responseOk(
@@ -28,7 +34,6 @@ export default class SampleController extends ControllerBase {
                 }),
             );
         } catch (e) {
-            console.error(e);
             return next(e);
         }
     }
@@ -44,12 +49,11 @@ export default class SampleController extends ControllerBase {
                     success: true,
                     data: {
                         result: 'ok',
-                        user: req.user,
+                        user: req.userInfo,
                     },
                 }),
             );
         } catch (e) {
-            console.error(e);
             return next(e);
         }
     }
