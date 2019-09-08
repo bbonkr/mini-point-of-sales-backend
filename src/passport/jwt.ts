@@ -39,7 +39,11 @@ export default () => {
                             );
                         }
 
-                        req.user = user;
+                        req.user = {
+                            id: user.id,
+                            username: user.username,
+                        };
+                        req.userInfo = user;
                         req.roles = user.roles;
 
                         done(null, user, null);

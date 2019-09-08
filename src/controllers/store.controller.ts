@@ -22,6 +22,12 @@ export default class StoreController extends ControllerBase {
             authNeedsManager,
             this.updateStore,
         );
+        this.router.delete(
+            '/:id',
+            authWithJwt,
+            authNeedsManager,
+            this.deleteStore,
+        );
     }
 
     /**
@@ -38,7 +44,7 @@ export default class StoreController extends ControllerBase {
         next: express.NextFunction,
     ): Promise<any> {
         try {
-            const userId = (req.user as User).id || 0;
+            const userId = req.userInfo.id || 0;
 
             const stores = await Store.findAll({
                 where: {},
@@ -105,7 +111,7 @@ export default class StoreController extends ControllerBase {
             });
 
             const addedStore = await newStore.save();
-            await addedStore.$add('users', req.user as User);
+            await addedStore.$add('users', req.userInfo);
 
             return res.json(
                 new JsonResult({
@@ -119,7 +125,7 @@ export default class StoreController extends ControllerBase {
     }
 
     /**
-     * 관리 매장을 추가합니다.
+     * 관리 매장 정보를 변경합니다.
      * PATCH: /api/store/:id
      * {
      *      name: string,
@@ -143,6 +149,13 @@ export default class StoreController extends ControllerBase {
                 where: {
                     id: id,
                 },
+                include: [
+                    {
+                        model: User,
+                        where: { id: req.userInfo.id },
+                        attributes: ['id', 'username', 'displayName', 'email'],
+                    },
+                ],
             });
 
             if ((name || '').trim().length === 0) {
@@ -179,6 +192,57 @@ export default class StoreController extends ControllerBase {
             );
         } catch (e) {
             return next(e);
+        }
+    }
+
+    /**
+     * 매장 정보를 삭제합니다.
+     * DELETE: /api/store/:id
+     *
+     * @param req
+     * @param res
+     * @param next
+     */
+    private async deleteStore(
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+    ): Promise<any> {
+        try {
+            const { id } = req.params;
+
+            const foundItem = await Store.findOne({
+                where: {
+                    id: id,
+                },
+                include: [
+                    {
+                        model: User,
+                        where: { id: req.userInfo.id },
+                        attributes: ['id', 'username', 'displayName', 'email'],
+                    },
+                ],
+            });
+
+            if (!foundItem) {
+                throw new HttpStatusError({
+                    code: 404,
+                    message: 'Could not find a store',
+                });
+            }
+
+            const deletedIt = foundItem.id;
+
+            await foundItem.destroy();
+
+            return res.json(
+                new JsonResult({
+                    success: true,
+                    data: deletedIt,
+                }),
+            );
+        } catch (err) {
+            return next(err);
         }
     }
 

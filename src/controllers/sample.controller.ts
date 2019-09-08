@@ -49,7 +49,7 @@ export default class SampleController extends ControllerBase {
                     success: true,
                     data: {
                         result: 'ok',
-                        user: req.user,
+                        user: req.userInfo,
                     },
                 }),
             );

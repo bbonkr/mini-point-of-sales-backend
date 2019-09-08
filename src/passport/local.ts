@@ -59,7 +59,10 @@ export default () => {
                                 'email',
                                 'photo',
                             ],
-                            include: [{ model: Role }, { model: Store }],
+                            include: [
+                                { model: Role, attributes: ['id', 'name'] },
+                                { model: Store, attributes: ['id', 'name'] },
+                            ],
                         });
 
                         return done(null, transferUser);

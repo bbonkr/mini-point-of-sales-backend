@@ -3,6 +3,7 @@ import express from 'express';
 import { JsonResult } from '../@typings/JsonResult';
 import { Roles } from '../@typings/enums/Roles';
 import { User } from '../models/User.model';
+import { Role } from '../models/Role.model';
 // const passport = require('passport');
 
 export const authNeedsManager = (
@@ -11,7 +12,7 @@ export const authNeedsManager = (
     next: express.NextFunction,
 ) => {
     const checkRole = new AuthorizationWithRole();
-    const isMemberOf = checkRole.memberOfRole(req.user as User, Roles.MANAGER);
+    const isMemberOf = checkRole.memberOfRole(req.roles, Roles.MANAGER);
 
     if (!isMemberOf) {
         return res.status(401).json(
@@ -35,7 +36,7 @@ export const authNeedsSystem = (
     next: express.NextFunction,
 ) => {
     const checkRole = new AuthorizationWithRole();
-    const isMemberOf = checkRole.memberOfRole(req.user as User, Roles.SYSTEM);
+    const isMemberOf = checkRole.memberOfRole(req.roles, Roles.SYSTEM);
 
     if (!isMemberOf) {
         return res.status(401).json(
@@ -54,8 +55,8 @@ export const authNeedsSystem = (
 };
 
 export class AuthorizationWithRole {
-    public memberOfRole(user: User, requireRole: Roles): boolean {
-        const hasRole = user.roles.find((role) => role.name === requireRole);
+    public memberOfRole(roles: Role[], requireRole: Roles): boolean {
+        const hasRole = roles.find((role) => role.name === requireRole);
 
         return !!hasRole;
     }
