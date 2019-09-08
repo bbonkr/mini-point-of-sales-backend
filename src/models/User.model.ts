@@ -13,6 +13,8 @@ import {
 } from 'sequelize-typescript';
 import { Store } from './Store.model';
 import { StoreAdministration } from './StoreAdministration.model';
+import { Role } from './Role.model';
+import { UserRole } from './UserRole.model';
 
 @Table({
     modelName: 'User',
@@ -52,6 +54,9 @@ export class User extends Model<User> {
     @Comment('이미지 URL')
     @Column(DataType.STRING(500))
     public photo?: string;
+
+    @BelongsToMany(() => Role, () => UserRole)
+    public roles!: Role[];
 
     @BelongsToMany(() => Store, () => StoreAdministration)
     public stores!: Store[];
