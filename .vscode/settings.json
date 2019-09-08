@@ -16,6 +16,7 @@
     "prettier.useTabs": false,
     "prettier.bracketSpacing": true,
     "prettier.printWidth": 80,
+    "typescript.preferences.importModuleSpecifier": "relative",
     "tslint.exclude": ["node_modules/**/*"],
     "tslint.configFile": "tslint.json",
     "tslint.packageManager": "npm"

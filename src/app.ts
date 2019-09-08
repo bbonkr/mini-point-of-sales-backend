@@ -15,6 +15,7 @@ import { Role } from './models/Role.model';
 import { Roles } from './@typings/enums/Roles';
 import { reject } from 'bluebird';
 import { UserRole } from './models/UserRole.model';
+import { Store } from './models/Store.model';
 
 export default class App {
     public port: number;
@@ -94,6 +95,7 @@ export default class App {
                         'email',
                         'photo',
                     ],
+                    include: [{ model: Role }, { model: Store }],
                 });
 
                 return done(null, user);

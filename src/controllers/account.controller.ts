@@ -9,6 +9,9 @@ import { ControllerBase } from '../@typings/ControllerBase';
 import { User } from '../models/User.model';
 import { HttpStatusError } from '../@typings/HttpStatusError';
 import { JsonResult } from '../@typings/JsonResult';
+import { UserRole } from '../models/UserRole.model';
+import { Role } from '../models/Role.model';
+import { Roles } from '../@typings/enums/Roles';
 
 export default class AccountController extends ControllerBase {
     public getPath(): string {
@@ -213,12 +216,25 @@ export default class AccountController extends ControllerBase {
                 return newUser.save();
             })
             .then((user) => {
-                delete user.password;
-
+                return Role.findOne({
+                    where: {
+                        name: Roles.MANAGER,
+                    },
+                }).then((role) => {
+                    if (role) {
+                        return UserRole.findOrCreate({
+                            where: {
+                                userId: user.id,
+                                roleId: role.id,
+                            },
+                        });
+                    }
+                });
+            })
+            .spread((userRole, created) => {
                 return res.status(201).json(
                     new JsonResult({
                         success: true,
-                        data: { user },
                     }),
                 );
             })
