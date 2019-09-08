@@ -16,6 +16,7 @@ import { Roles } from './@typings/enums/Roles';
 import { reject } from 'bluebird';
 import { UserRole } from './models/UserRole.model';
 import { Store } from './models/Store.model';
+import { errorLogger, errorJsonResult } from './middleware/errorProcess';
 
 export default class App {
     public port: number;
@@ -163,6 +164,9 @@ export default class App {
                 res.status(404).send({ message: `Not fount: ${req.url}` });
             },
         );
+
+        this.app.use(errorLogger);
+        this.app.use(errorJsonResult);
     }
 
     private initializeRequiredDataRoles(): Promise<number> {

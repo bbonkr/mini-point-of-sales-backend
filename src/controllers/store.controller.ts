@@ -1,9 +1,12 @@
 import { ControllerBase } from '../@typings/ControllerBase';
 import express = require('express');
-import { passportJwt } from '../middleware/auth';
+import { authWithJwt } from '../middleware/authWithJwt';
 import { JsonResult } from '../@typings/JsonResult';
 import { Store } from '../models/Store.model';
 import { User } from '../models/User.model';
+import { authNeedsManager } from '../middleware/authAsRole';
+import { HttpStatusError } from '../@typings/HttpStatusError';
+import { BusinessTypes } from '../@typings/enums/BusinessTypes';
 
 export default class StoreController extends ControllerBase {
     public getPath(): string {
@@ -11,8 +14,14 @@ export default class StoreController extends ControllerBase {
     }
 
     protected initializeRoutes(): void {
-        this.router.get('/', passportJwt, this.getStores);
-        this.router.post('/', passportJwt, this.createStore);
+        this.router.get('/', authWithJwt, authNeedsManager, this.getStores);
+        this.router.post('/', authWithJwt, authNeedsManager, this.createStore);
+        this.router.patch(
+            '/:id',
+            authWithJwt,
+            authNeedsManager,
+            this.updateStore,
+        );
     }
 
     /**
@@ -52,7 +61,6 @@ export default class StoreController extends ControllerBase {
                 }),
             );
         } catch (e) {
-            console.error(e);
             return next(e);
         }
     }
@@ -77,6 +85,20 @@ export default class StoreController extends ControllerBase {
         try {
             const { name, businessType } = req.body;
 
+            if ((name || '').trim().length === 0) {
+                throw new HttpStatusError({
+                    code: 400,
+                    message: 'Store name does not allow empty value.',
+                });
+            }
+
+            if (!Object.values(BusinessTypes).includes(businessType || 0)) {
+                throw new HttpStatusError({
+                    code: 400,
+                    message: `BusinessType name does not allow [${businessType}].`,
+                });
+            }
+
             const newStore = new Store({
                 name: name,
                 businessType: businessType,
@@ -92,7 +114,70 @@ export default class StoreController extends ControllerBase {
                 }),
             );
         } catch (e) {
-            console.error(e);
+            next(e);
+        }
+    }
+
+    /**
+     * 관리 매장을 추가합니다.
+     * PATCH: /api/store/:id
+     * {
+     *      name: string,
+     *      businessType: BusinessTypes
+     * }
+     *
+     * @param req
+     * @param res
+     * @param next
+     */
+    private async updateStore(
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+    ): Promise<any> {
+        try {
+            const { id } = req.params;
+            const { name, businessType } = req.body;
+
+            const foundItem = await Store.findOne({
+                where: {
+                    id: id,
+                },
+            });
+
+            if ((name || '').trim().length === 0) {
+                throw new HttpStatusError({
+                    code: 400,
+                    message: 'Store name does not allow empty value.',
+                });
+            }
+
+            if (!Object.values(BusinessTypes).includes(businessType || 0)) {
+                throw new HttpStatusError({
+                    code: 400,
+                    message: `BusinessType name does not allow [${businessType}].`,
+                });
+            }
+
+            if (!foundItem) {
+                throw new HttpStatusError({
+                    code: 404,
+                    message: 'Could not find the Store.',
+                });
+            }
+
+            foundItem.name = name;
+            foundItem.businessType = businessType;
+
+            const updatedItem = await foundItem.save();
+
+            return res.json(
+                new JsonResult({
+                    success: true,
+                    data: updatedItem,
+                }),
+            );
+        } catch (e) {
             return next(e);
         }
     }
@@ -105,7 +190,6 @@ export default class StoreController extends ControllerBase {
         try {
             // 신청 :( 모델이 없음!
         } catch (e) {
-            console.error(e);
             return next(e);
         }
     }
@@ -124,7 +208,6 @@ export default class StoreController extends ControllerBase {
         try {
             // 신청 :( 모델이 없음!
         } catch (e) {
-            console.error(e);
             return next(e);
         }
     }
@@ -143,7 +226,6 @@ export default class StoreController extends ControllerBase {
         try {
             // 신청 :( 모델이 없음!
         } catch (e) {
-            console.error(e);
             return next(e);
         }
     }
