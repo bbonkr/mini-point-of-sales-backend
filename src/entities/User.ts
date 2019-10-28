@@ -8,15 +8,15 @@ export class User {
     @PrimaryGeneratedColumn()
     public id: number;
 
-    @Column({ length: 100 })
+    @Column({ length: 100, nullable: false, unique: true })
     public username: string;
-    @Column({ length: 100 })
+    @Column({ length: 100, nullable: false })
     public displayName: string;
-    @Column({ length: 100 })
+    @Column({ length: 100, nullable: false, unique: true })
     public email: string;
-    @Column({ length: 500 })
+    @Column({ length: 500, nullable: false })
     public password: string;
-    @Column()
+    @Column({ default: false, nullable: false })
     public isEmailConfirmed: boolean;
     @Column({ length: 500 })
     public photo: string;
