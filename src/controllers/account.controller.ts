@@ -5,12 +5,12 @@ import bcrypt from 'bcrypt';
 import { jwtOptions } from '../config/jwt';
 import { SessionRequest } from '../@typings/SessionRequest';
 import { ControllerBase } from '../@typings/ControllerBase';
-import { User } from '../models/User.model';
 import { HttpStatusError } from '../@typings/HttpStatusError';
 import { JsonResult } from '../@typings/JsonResult';
-import { UserRole } from '../models/UserRole.model';
-import { Role } from '../models/Role.model';
 import { Roles } from '../@typings/enums/Roles';
+import { User } from '../entities/User';
+import { Role } from '../entities/Role';
+import { getRepository, getManager } from 'typeorm';
 
 export default class AccountController extends ControllerBase {
     public getPath(): string {
@@ -35,7 +35,7 @@ export default class AccountController extends ControllerBase {
      * @param next
      */
     private signin(
-        req: express.Request,
+        req: Express.Request,
         res: express.Response,
         next: express.NextFunction,
     ): any {
@@ -157,10 +157,17 @@ export default class AccountController extends ControllerBase {
                 });
             }
 
-            const { count: countUsername, rows } = await User.findAndCountAll({
-                where: {
-                    username: username,
-                },
+            // const { count: countUsername, rows } = await User.findAndCountAll({
+            //     where: {
+            //         username: username,
+            //     },
+            // });
+
+            const userRepository = getManager().getRepository(User);
+            const roleRepository = getManager().getRepository(Role);
+
+            const countUsername = await userRepository.count({
+                where: { username: username },
             });
 
             if (countUsername > 0) {
@@ -170,10 +177,14 @@ export default class AccountController extends ControllerBase {
                 });
             }
 
-            const { count: countEmail } = await User.findAndCountAll({
-                where: {
-                    email: email,
-                },
+            // const { count: countEmail } = await User.findAndCountAll({
+            //     where: {
+            //         email: email,
+            //     },
+            // });
+
+            const countEmail = await userRepository.count({
+                where: { email: email },
             });
 
             if (countEmail > 0) {
@@ -185,33 +196,45 @@ export default class AccountController extends ControllerBase {
 
             const hashedPassword = await bcrypt.hash(password, 12);
 
-            const newUser = new User({
-                username: username,
-                password: hashedPassword,
-                email: email,
-                displayName: displayName,
-            });
+            // const newUser = new User({
+            //     username: username,
+            //     password: hashedPassword,
+            //     email: email,
+            //     displayName: displayName,
+            // });
+
+            const newUser: User = new User();
+            newUser.username = username;
+            newUser.displayName = displayName;
+            newUser.email = email;
+            newUser.password = hashedPassword;
 
             // TODO send virify email.
-            const user = await newUser.save();
+            // const user = await newUser.save();
+            // const role = await Role.findOne({
+            //     where: {
+            //         name: Roles.MANAGER,
+            //     },
+            // });
 
-            const role = await Role.findOne({
-                where: {
-                    name: Roles.MANAGER,
-                },
+            const role = await roleRepository.findOne({
+                where: { name: Roles.MANAGER },
             });
 
             if (role) {
-                const userRole = new UserRole({
-                    userId: user.id,
-                    roleId: role.id,
-                });
+                // const userRole = new UserRole({
+                //     userId: user.id,
+                //     roleId: role.id,
+                // });
+                newUser.roles = [role];
             } else {
                 throw new HttpStatusError({
                     code: 500,
                     message: 'Data corrupted. contact system admin',
                 });
             }
+
+            await userRepository.save(newUser);
 
             return res.status(201).json(
                 new JsonResult({

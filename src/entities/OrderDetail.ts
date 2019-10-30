@@ -7,12 +7,10 @@ import {
 } from 'typeorm';
 import { Store } from './Store';
 import { Order } from './Order';
+import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
 
 @Entity({ name: 'OrderDetails' })
-export class OrderDetail {
-    @PrimaryGeneratedColumn()
-    public id: number;
-
+export class OrderDetail extends PrimaryEntityBase {
     @Column({ length: 100, nullable: false, comment: '메뉴 이름' })
     public name: string;
 
@@ -29,16 +27,16 @@ export class OrderDetail {
     public takeout: boolean;
 
     @Column()
-    public storeId: number;
+    public storeId: string;
 
     @ManyToOne((type) => Store, (store) => store.orderDetails)
-    @JoinColumn({ name: 'storeId' })
+    @JoinColumn({ name: 'storeId', referencedColumnName: 'id' })
     public store: Store;
 
     @Column()
-    public orderId: number;
+    public orderId: string;
 
     @ManyToOne((type) => Order, (order) => order.orderDetails)
-    @JoinColumn({ name: 'orderId' })
+    @JoinColumn({ name: 'orderId', referencedColumnName: 'id' })
     public order: Order;
 }

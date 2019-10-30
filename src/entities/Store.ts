@@ -1,17 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    OneToMany,
+    ManyToMany,
+} from 'typeorm';
 import { BusinessTypes } from '../@typings/enums/BusinessTypes';
-import { StoreAdministration } from './StoreAdministration';
-import { StoreCustomer } from './StoreCustomer';
 import { Payment } from './Payment';
 import { OrderDetail } from './OrderDetail';
 import { Order } from './Order';
 import { Menu } from './Menu';
+import { User } from './User';
+import { Customer } from './Customer';
+import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
 
 @Entity({ name: 'Stores' })
-export class Store {
-    @PrimaryGeneratedColumn()
-    public id: number;
-
+export class Store extends PrimaryEntityBase {
     @Column({ length: 100, nullable: false, comment: '매장 이름' })
     public name!: string;
 
@@ -22,20 +26,17 @@ export class Store {
     })
     public businessType!: BusinessTypes;
 
-    @Column({ default: new Date(), comment: '유효기간 시작' })
+    @Column({ nullable: true, comment: '유효기간 시작' })
     public validAt!: Date;
 
-    @Column({ default: new Date(), comment: '유효기간 종료' })
+    @Column({ nullable: true, comment: '유효기간 종료' })
     public validUntil!: Date;
 
-    @OneToMany(
-        (type) => StoreAdministration,
-        (storeAdministration) => storeAdministration.store,
-    )
-    public storeAdministrations!: StoreAdministration[];
+    @ManyToMany((type) => User, (user) => user.stores)
+    public administrations!: User[];
 
-    @OneToMany((type) => StoreCustomer, (storeCustomer) => storeCustomer.store)
-    public storeCustomers: StoreCustomer[];
+    @ManyToMany((type) => Customer, (customer) => customer.stores)
+    public customers: Customer[];
 
     @OneToMany((type) => Payment, (payment) => payment.store)
     public payments: Payment[];

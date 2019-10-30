@@ -1,17 +1,18 @@
+import Request from '../@types/express.Request.InlcudeRole';
 import passport from 'passport';
-import express, { Request } from 'express';
 import {
     Strategy,
     IStrategyOptionsWithRequest,
     IVerifyOptions,
 } from 'passport-local';
 import bcrypt from 'bcrypt';
-import { User } from '../models/User.model';
-import { UserRole } from '../models/UserRole.model';
-import { Store } from '../models/Store.model';
-import { Role } from '../models/Role.model';
+import { User } from '../entities/User';
+import { Store } from '../entities/Store';
+import { Role } from '../entities/Role';
+import { getRepository, getManager } from 'typeorm';
 
 export default () => {
+    const userRepository = getManager().getRepository(User);
     passport.use(
         new Strategy(
             {
@@ -21,7 +22,7 @@ export default () => {
                 session: false,
             },
             async (
-                req: express.Request,
+                req: Express.Request,
                 username: string,
                 password: string,
                 done: (
@@ -31,7 +32,7 @@ export default () => {
                 ) => void,
             ) => {
                 try {
-                    const user = await User.findOne({
+                    const user = await userRepository.findOne({
                         where: { username: username },
                     });
 
@@ -50,20 +51,40 @@ export default () => {
                     );
 
                     if (result) {
-                        const transferUser: User = await User.findOne({
+                        // const transferUser: User = await User.findOne({
+                        //     where: { id: user.id },
+                        //     attributes: [
+                        //         'id',
+                        //         'username',
+                        //         'displayName',
+                        //         'email',
+                        //         'photo',
+                        //     ],
+                        //     include: [
+                        //         { model: Role, attributes: ['id', 'name'] },
+                        //         { model: Store, attributes: ['id', 'name'] },
+                        //     ],
+                        // });
+
+                        const transferUser = await userRepository.findOne({
                             where: { id: user.id },
-                            attributes: [
+                            select: [
                                 'id',
                                 'username',
                                 'displayName',
                                 'email',
                                 'photo',
                             ],
-                            include: [
-                                { model: Role, attributes: ['id', 'name'] },
-                                { model: Store, attributes: ['id', 'name'] },
-                            ],
+                            // TODO 필드 제한
+                            relations: ['roles', 'stores'],
                         });
+
+                        req.user = {
+                            id: transferUser.id,
+                            username: transferUser.username,
+                        };
+                        req.userInfo = transferUser;
+                        req.roles = transferUser.roles;
 
                         return done(null, transferUser);
                     } else {

@@ -2,8 +2,8 @@ import passport from 'passport';
 import express from 'express';
 import { JsonResult } from '../@typings/JsonResult';
 import { Roles } from '../@typings/enums/Roles';
-import { User } from '../models/User.model';
-import { Role } from '../models/Role.model';
+import { User } from '../entities/User';
+import { Role } from '../entities/Role';
 // const passport = require('passport');
 
 export const authNeedsManager = (
