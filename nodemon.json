@@ -1,15 +1,14 @@
 {
     "verbose": true,
-    "watch":[
-        "src",
-        "nodemon.json"
-    ],
+    "watch": ["src", "nodemon.json"],
     "ignore": [
         "dist",
         "node_modules",
-        "*.test.js"
+        "*.test.js",
+        "src/**/*.spec.ts",
+        "src/**/*.test.ts"
     ],
-    "exec":"npm run start",
-    "ext":"ts",
+    "exec": "ts-node ./src/index.ts",
+    "ext": "ts",
     "delay": 1000
-  }
+}
