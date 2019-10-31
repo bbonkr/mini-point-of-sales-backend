@@ -4,19 +4,18 @@ import expressSession from 'express-session';
 import morgan from 'morgan';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
-import { sequelize } from './models';
-import passport = require('passport');
-import { User } from './models/User.model';
+import passport from 'passport';
 import local from './passport/local';
 import jwt from './passport/jwt';
-import DatabaseSessionStore from './passport/databaseSessionStore';
+import DatabaseSessionStore from './passport/DatabaseSessionStoreWithTypeorm';
 import { IControllerBase } from './@typings/IControllerBase';
-import { Role } from './models/Role.model';
+import { User } from './entities/User';
+import { Role } from './entities/Role';
 import { Roles } from './@typings/enums/Roles';
-import { reject } from 'bluebird';
-import { UserRole } from './models/UserRole.model';
-import { Store } from './models/Store.model';
+import { Store } from './entities/Store';
 import { errorLogger, errorJsonResult } from './middleware/errorProcess';
+import { getRepository, getManager } from 'typeorm';
+import { typeormConfig } from './config/config';
 
 export default class App {
     public port: number;
@@ -28,7 +27,7 @@ export default class App {
         this.app = express();
         this.port = port || 3000;
 
-        this.initializeDatabaseConnection();
+        this.initializeDatabaseConnectionWithTypeorm();
         this.initializePassport();
         this.initializeMiddlewares();
         this.initializeControllers(controllers);
@@ -40,40 +39,12 @@ export default class App {
         });
     }
 
-    private initializeDatabaseConnection() {
-        sequelize
-            .sync({
-                // If force is true, each DAO will do DROP TABLE IF EXISTS ...,
-                // before it tries to create its own table
-                force: false,
-                // If alter is true, each DAO will do ALTER TABLE ... CHANGE ... Alters tables to fit models.
-                // Not recommended for production use.
-                // Deletes data in columns that were removed or had their type changed in the model.
-                alter: false,
-            })
-            .then((_) => {
-                console.log('[APP] Prepare data.');
+    private initializeDatabaseConnectionWithTypeorm(): void {
+        this.initializeRequiredDataRoles();
 
-                return this.initializeRequiredDataRoles().then((count) => {
-                    if (count) {
-                        console.log(`[APP] Roles created. ${count} records.`);
-                    } else {
-                        console.log(`[APP] Roles exists. Phase passed.`);
-                    }
-                });
-            })
-            .then((_) => {
-                return this.initializeRequiredDataUsers().then((count) => {
-                    if (count) {
-                        console.log(`[APP] System user created.`);
-                    } else {
-                        console.log(`[APP] System user exists. Phase passed.`);
-                    }
-                });
-            })
-            .then((_) => {
-                console.log('[APP] Database ready!');
-            });
+        this.initializeRequiredDataUsers();
+
+        console.info('Database has been synchronized.');
     }
 
     private initializePassport() {
@@ -85,19 +56,20 @@ export default class App {
         passport.deserializeUser(async (id: number, done) => {
             console.debug('>>>> passport.deserializeUser');
             try {
-                const user = await User.findOne({
-                    where: {
-                        id: id,
-                    },
-                    attributes: [
-                        'id',
-                        'username',
-                        'displayName',
-                        'email',
-                        'photo',
-                    ],
-                    include: [{ model: Role }, { model: Store }],
-                });
+                const userRepository = getManager().getRepository(User);
+
+                const user = await userRepository
+                    .createQueryBuilder('u')
+                    // .leftJoinAndSelect('p.')
+                    .where('u.id = :id', { id: id })
+                    .select(['id', 'username', 'displayName', 'email', 'photo'])
+                    .getOne();
+
+                // ({
+                //     where: { id: id },
+                //     select: ['id', 'username', 'displayName', 'email', 'photo'],
+                //     relations: ['']
+                // });
 
                 return done(null, user);
             } catch (e) {
@@ -169,73 +141,69 @@ export default class App {
         this.app.use(errorJsonResult);
     }
 
-    private initializeRequiredDataRoles(): Promise<number> {
-        return Role.findAndCountAll().then((result) => {
-            const { count, rows } = result;
+    private initializeRequiredDataRoles(): number {
+        let roleCount: number = 0;
+        const roleRepository = getManager().getRepository(Role);
 
-            if (count === 0) {
-                return Role.bulkCreate([
-                    { name: Roles.SYSTEM },
-                    { name: Roles.MANAGER },
-                ])
-                    .then((users) => {
-                        return users.length;
-                    })
-                    .catch((err) => {
-                        console.error(err);
-                        return 0;
-                    });
-            }
+        roleRepository
+            .createQueryBuilder('r')
+            .getCount()
+            .then((count) => {
+                roleCount = count;
+            })
+            .catch((err) => {
+                console.error(err);
+            });
 
-            return 0;
-        });
+        if (roleCount === 0) {
+            const systemRole = new Role();
+            systemRole.name = Roles.SYSTEM;
+            const managerRole = new Role();
+            managerRole.name = Roles.MANAGER;
+
+            roleRepository
+                .insert([systemRole, managerRole])
+                .then((result) => {
+                    roleCount = result.identifiers.length;
+                })
+                .catch((err) => {
+                    console.error(err);
+                });
+        }
+
+        return roleCount;
     }
 
-    private initializeRequiredDataUsers(): Promise<number> {
+    private initializeRequiredDataUsers(): number {
         const systemUsername = process.env.SYSTEM_USERNAME || 'agent';
-        return User.findAndCountAll({
-            where: { username: systemUsername },
-        }).then((result) => {
-            const { count, rows } = result;
 
-            if (count === 0) {
-                return bcrypt
-                    .hash(process.env.SYSTME_PASSWORD || 'minipos@**@', 12)
-                    .then((hashedPassword) => {
-                        if (hashedPassword) {
-                            const systemUser = new User({
-                                username: systemUsername,
-                                password: hashedPassword,
-                                displayName: 'system',
-                                email:
-                                    process.env.SYSTEM_EMAIL ||
-                                    'test@sample.com',
-                            });
-                            return systemUser.save();
-                        }
-                    })
-                    .then((user) => {
-                        return Role.findOne({
-                            where: { name: Roles.SYSTEM },
-                        })
-                            .then((role) => {
-                                return UserRole.findOrCreate({
-                                    where: {
-                                        userId: user.id,
-                                        roleId: role.id,
-                                    },
-                                    defaults: {
-                                        userId: user.id,
-                                        roleId: role.id,
-                                    },
-                                });
-                            })
-                            .spread((userRole, created) => {
-                                // const created = result.length > 1 ? result[1] : false;
-                                return created ? 1 : 0;
-                            });
-                    });
-            }
-        });
+        let userCount: number = 0;
+        const userRepository = getRepository(User);
+        userRepository
+            .findAndCount({ where: { username: systemUsername } })
+            .then(async ([user, count]) => {
+                if (count === 0) {
+                    const hashedPassword = await bcrypt.hash(
+                        process.env.SYSTEM_PASSWORD || 'minipos@**@',
+                        12,
+                    );
+
+                    const systemUser = new User();
+                    systemUser.username = systemUsername;
+                    systemUser.password = hashedPassword;
+                    systemUser.displayName = 'system';
+                    systemUser.email = process.env.SYSTEM_EMAIL;
+
+                    const newUser = await userRepository.save(systemUser);
+                    if (newUser) {
+                        userCount = 1;
+                    }
+                }
+            })
+            .catch((err) => {
+                console.error(err);
+            });
+
+        return userCount;
     }
 }

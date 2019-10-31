@@ -1,23 +1,20 @@
 import expressSession from 'express-session';
-import Sequelize from 'sequelize';
-import { Session } from './Session.model';
+import { Session } from '../entities/Session';
 import { IDatabaseSessionStoreOptions } from '../@typings/IDatabaseSessionStoreOptions';
-
-const Op = Sequelize.Op;
-
-// const Op = sequelize.Sequelize;
+import { getManager, getRepository, Repository } from 'typeorm';
 
 /**
- * Sequelize 를 사용하는 세션 저장소
- * !! Require('sequelize')
- * http://docs.sequelizejs.com/
+ * Typeorm 을 사용하는 세션 저장소
+ * !! Require('typeorm')
+ * https://typeorm.io/
  * ```
- * $ npm i sequelize --save
+ * $ npm i typeorm --save
  * ```
  */
 export default class DatabaseSessionStore extends expressSession.Store {
     private options: IDatabaseSessionStoreOptions;
     private clearExpiredSessionsInterval: NodeJS.Timeout;
+    private sessionRepository: Repository<Session>;
 
     constructor(config: IDatabaseSessionStoreOptions) {
         super(config);
@@ -31,19 +28,23 @@ export default class DatabaseSessionStore extends expressSession.Store {
 
         this.options = options;
         this.startClearExpiredSessions();
+        this.sessionRepository = getManager().getRepository(Session);
     }
 
     public destroy = (sid: string, callback?: (err?: any) => void): void => {
-        Session.findOne({
-            where: {
-                sid: sid,
-            },
-        })
-            .then((session) => session.destroy())
-            .catch((err) => {
-                console.error(err);
+        this.sessionRepository
+            .findOne({
+                where: {
+                    sid: sid,
+                },
+            })
+            .then((session) => {
+                return this.sessionRepository.remove(session);
+            })
+            .catch((error) => {
+                console.error(error);
                 if (callback) {
-                    callback(err);
+                    callback(error);
                 }
             });
     };
@@ -52,21 +53,28 @@ export default class DatabaseSessionStore extends expressSession.Store {
         sid: string,
         callback: (err: any, session?: Express.SessionData | null) => void,
     ): void => {
-        Session.findOne({ where: { sid: sid } })
+        this.sessionRepository
+            .findOne({
+                where: { sid: sid },
+            })
             .then((session) => {
-                const now = new Date();
-                const expired = session.expire > now;
-                const err: Error | null = expired
-                    ? new Error('Session was expired.')
-                    : null;
-                const sessionData: Express.SessionData | null = expired
-                    ? null
-                    : (JSON.parse(session.sess) as Express.SessionData);
+                if (session) {
+                    const now = new Date();
+                    const expired = session.expire > now;
+                    const err: Error | null = expired
+                        ? new Error('Session was expired.')
+                        : null;
+                    const sessionData: Express.SessionData | null = expired
+                        ? null
+                        : (JSON.parse(session.sess) as Express.SessionData);
 
-                console.debug('session: ', expired ? 'expired' : 'valid');
+                    console.debug('session: ', expired ? 'expired' : 'valid');
 
-                if (callback) {
-                    callback(err, sessionData);
+                    if (callback) {
+                        callback(err, sessionData);
+                    }
+                } else {
+                    throw new Error('Session does not find.');
                 }
             })
             .catch((err) => {
@@ -89,14 +97,13 @@ export default class DatabaseSessionStore extends expressSession.Store {
         );
         const expire = new Date(expireMiliseconds);
 
-        const newSession = new Session({
-            sid: sid,
-            sess: JSON.stringify(session),
-            expire: expire,
-        });
+        const newSession = new Session();
+        newSession.sid = sid;
+        newSession.sess = JSON.stringify(session);
+        newSession.expire = expire;
 
-        newSession
-            .save()
+        this.sessionRepository
+            .save(newSession)
             .then((_) => {
                 console.debug('session created.');
                 if (callback) {
@@ -112,15 +119,19 @@ export default class DatabaseSessionStore extends expressSession.Store {
     };
 
     private clearExpiredSessions(): void {
-        Session.destroy({
-            where: {
-                expire: {
-                    [Op.lte]: new Date(),
-                },
-            },
-        })
-            .then((affected) => {
-                console.debug(`${affected} expired session deleted.`);
+        this.sessionRepository
+            .createQueryBuilder('s')
+            .where('s.expire < :now', { now: new Date() })
+            .getMany()
+            .then((sessions) => {
+                return Promise.all(
+                    sessions.map((s) => {
+                        return this.sessionRepository.delete(s);
+                    }),
+                );
+            })
+            .then((_) => {
+                console.debug(`expired session deleted.`);
             })
             .catch((err) => {
                 console.error(err);

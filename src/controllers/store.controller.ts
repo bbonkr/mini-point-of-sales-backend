@@ -1,12 +1,13 @@
+import express from 'express';
 import { ControllerBase } from '../@typings/ControllerBase';
-import express = require('express');
 import { authWithJwt } from '../middleware/authWithJwt';
 import { JsonResult } from '../@typings/JsonResult';
-import { Store } from '../models/Store.model';
-import { User } from '../models/User.model';
 import { authNeedsManager } from '../middleware/authAsRole';
 import { HttpStatusError } from '../@typings/HttpStatusError';
 import { BusinessTypes } from '../@typings/enums/BusinessTypes';
+import { Store } from '../entities/Store';
+import { User } from '../entities/User';
+import { getRepository, getManager } from 'typeorm';
 
 export default class StoreController extends ControllerBase {
     public getPath(): string {
@@ -46,19 +47,29 @@ export default class StoreController extends ControllerBase {
         try {
             const userId = req.userInfo.id || 0;
 
-            const stores = await Store.findAll({
-                where: {},
-                include: [
+            const storeRepository = getManager().getRepository(Store);
+            const stores = await storeRepository
+                .createQueryBuilder('store')
+                .innerJoinAndSelect(
+                    'store.administrations',
+                    'administrations',
+                    'administrations.id = :userId',
                     {
-                        model: User,
-                        as: 'users',
-                        where: {
-                            id: userId,
-                        },
-                        attributes: ['id'],
+                        userId: userId,
                     },
-                ],
-            });
+                )
+                .select([
+                    'store.id',
+                    'store.name',
+                    'store.businessType',
+                    'store.validAt',
+                    'store.validUntil',
+                    'administrations.id',
+                    'administrations.username',
+                    'administrations.displayName',
+                    'administrations.email',
+                ])
+                .getMany();
 
             return res.json(
                 new JsonResult({
@@ -105,13 +116,47 @@ export default class StoreController extends ControllerBase {
                 });
             }
 
-            const newStore = new Store({
-                name: name,
-                businessType: businessType,
-            });
+            // const newStore = new Store({
+            //     name: name,
+            //     businessType: businessType,
+            // });
 
-            const addedStore = await newStore.save();
-            await addedStore.$add('users', req.userInfo);
+            const storeRepository = getManager().getRepository(Store);
+
+            const newStore = new Store();
+            newStore.name = name;
+            newStore.businessType = businessType;
+
+            // const addedStore = await newStore.save();
+            // await addedStore.$add('users', req.userInfo);
+            if (req.userInfo) {
+                newStore.administrations = [req.userInfo];
+            }
+            const savedStore = await storeRepository.save(newStore);
+
+            const addedStore = await storeRepository
+                .createQueryBuilder('store')
+                .innerJoinAndSelect(
+                    'store.administrations',
+                    'administrations',
+                    'administrations.id = :userId',
+                    {
+                        userId: req.user.id,
+                    },
+                )
+                .select([
+                    'store.id',
+                    'store.name',
+                    'store.businessType',
+                    'store.validAt',
+                    'store.validUntil',
+                    'administrations.id',
+                    'administrations.username',
+                    'administrations.displayName',
+                    'administrations.email',
+                ])
+                .where('store.id = :storeId', { storeId: savedStore.id })
+                .getOne();
 
             return res.json(
                 new JsonResult({
@@ -145,19 +190,6 @@ export default class StoreController extends ControllerBase {
             const { id } = req.params;
             const { name, businessType } = req.body;
 
-            const foundItem = await Store.findOne({
-                where: {
-                    id: id,
-                },
-                include: [
-                    {
-                        model: User,
-                        where: { id: req.userInfo.id },
-                        attributes: ['id', 'username', 'displayName', 'email'],
-                    },
-                ],
-            });
-
             if ((name || '').trim().length === 0) {
                 throw new HttpStatusError({
                     code: 400,
@@ -172,6 +204,20 @@ export default class StoreController extends ControllerBase {
                 });
             }
 
+            const storeRepository = getManager().getRepository(Store);
+            const foundItem = await storeRepository
+                .createQueryBuilder('store')
+                .innerJoinAndSelect(
+                    'store.administrations',
+                    'admin',
+                    'admin.id = :userId',
+                    {
+                        userId: req.userInfo.id,
+                    },
+                )
+                .where('store.id = :storeId', { storeId: id })
+                .getOne();
+
             if (!foundItem) {
                 throw new HttpStatusError({
                     code: 404,
@@ -182,12 +228,36 @@ export default class StoreController extends ControllerBase {
             foundItem.name = name;
             foundItem.businessType = businessType;
 
-            const updatedItem = await foundItem.save();
+            const savedStore = await storeRepository.save(foundItem);
+
+            const updatedStore = await storeRepository
+                .createQueryBuilder('store')
+                .innerJoinAndSelect(
+                    'store.administrations',
+                    'administrations',
+                    'administrations.id = :userId',
+                    {
+                        userId: req.user.id,
+                    },
+                )
+                .select([
+                    'store.id',
+                    'store.name',
+                    'store.businessType',
+                    'store.validAt',
+                    'store.validUntil',
+                    'administrations.id',
+                    'administrations.username',
+                    'administrations.displayName',
+                    'administrations.email',
+                ])
+                .where('store.id = :storeId', { storeId: savedStore.id })
+                .getOne();
 
             return res.json(
                 new JsonResult({
                     success: true,
-                    data: updatedItem,
+                    data: updatedStore,
                 }),
             );
         } catch (e) {
@@ -211,18 +281,19 @@ export default class StoreController extends ControllerBase {
         try {
             const { id } = req.params;
 
-            const foundItem = await Store.findOne({
-                where: {
-                    id: id,
-                },
-                include: [
+            const storeRepository = getManager().getRepository(Store);
+            const foundItem = await storeRepository
+                .createQueryBuilder('store')
+                .innerJoin(
+                    'store.administrations',
+                    'admin',
+                    'admin.id = :userId',
                     {
-                        model: User,
-                        where: { id: req.userInfo.id },
-                        attributes: ['id', 'username', 'displayName', 'email'],
+                        userId: req.userInfo.id,
                     },
-                ],
-            });
+                )
+                .where('store.id = :storeId', { storeId: id })
+                .getOne();
 
             if (!foundItem) {
                 throw new HttpStatusError({
@@ -233,7 +304,8 @@ export default class StoreController extends ControllerBase {
 
             const deletedIt = foundItem.id;
 
-            await foundItem.destroy();
+            // await foundItem.destroy();
+            await storeRepository.remove([foundItem]);
 
             return res.json(
                 new JsonResult({
