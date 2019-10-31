@@ -7,24 +7,14 @@ import bcrypt from 'bcrypt';
 import passport from 'passport';
 import local from './passport/local';
 import jwt from './passport/jwt';
-// import DatabaseSessionStore from './passport/databaseSessionStore';
-import DatabaseSessionStore from './passport/DatabaseSessionStore';
+import DatabaseSessionStore from './passport/DatabaseSessionStoreWithTypeorm';
 import { IControllerBase } from './@typings/IControllerBase';
 import { User } from './entities/User';
 import { Role } from './entities/Role';
 import { Roles } from './@typings/enums/Roles';
 import { Store } from './entities/Store';
 import { errorLogger, errorJsonResult } from './middleware/errorProcess';
-import {
-    getConnectionManager,
-    ConnectionManager,
-    Connection,
-    getConnectionOptions,
-    getRepository,
-    createConnection,
-    getManager,
-    getConnection,
-} from 'typeorm';
+import { getRepository, getManager } from 'typeorm';
 import { typeormConfig } from './config/config';
 
 export default class App {
@@ -50,61 +40,11 @@ export default class App {
     }
 
     private initializeDatabaseConnectionWithTypeorm(): void {
-        // const connectionManager = getConnectionManager();
-
-        // const connection = getConnection();
-
-        // connection.synchronize().then((_) => {
-        //     this.initializeRequiredDataRoles();
-
-        //     this.initializeRequiredDataUsers();
-
-        //     console.info('Database has been synchronized.');
-        // });
-
         this.initializeRequiredDataRoles();
 
         this.initializeRequiredDataUsers();
 
         console.info('Database has been synchronized.');
-        // let connection: Connection;
-        // createConnection(typeormConfig)
-        //     .then((conn) => {
-        //         connection = conn;
-        //         return conn.connect();
-        //     })
-        //     .then((_) => {
-        //         this.initializeRequiredDataRoles();
-
-        //         this.initializeRequiredDataUsers();
-
-        //         // return connection.close();
-        //     })
-        //     .then((_) => {
-        //         console.info('Database has been synchronized.');
-        //     })
-        //     .catch((err) => {
-        //         console.error(err);
-
-        //         throw err;
-        //     });
-        // getConnectionOptions()
-        //     .then((options) => {
-        //         return connectionManager.create(options);
-        //     })
-        //     .then((connection) => {
-        //         return connection.connect();
-        //     })
-        //     .then((connection) => {
-        //         this.initializeRequiredDataRoles();
-
-        //         this.initializeRequiredDataUsers();
-
-        //         connection.close();
-        //     })
-        //     .catch((err) => {
-        //         console.error(err);
-        //     });
     }
 
     private initializePassport() {
@@ -116,20 +56,6 @@ export default class App {
         passport.deserializeUser(async (id: number, done) => {
             console.debug('>>>> passport.deserializeUser');
             try {
-                // const user = await User.findOne({
-                //     where: {
-                //         id: id,
-                //     },
-                //     attributes: [
-                //         'id',
-                //         'username',
-                //         'displayName',
-                //         'email',
-                //         'photo',
-                //     ],
-                //     include: [{ model: Role }, { model: Store }],
-                // });
-
                 const userRepository = getManager().getRepository(User);
 
                 const user = await userRepository

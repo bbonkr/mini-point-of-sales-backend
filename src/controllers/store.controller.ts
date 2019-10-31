@@ -1,5 +1,5 @@
+import express from 'express';
 import { ControllerBase } from '../@typings/ControllerBase';
-import express = require('express');
 import { authWithJwt } from '../middleware/authWithJwt';
 import { JsonResult } from '../@typings/JsonResult';
 import { authNeedsManager } from '../middleware/authAsRole';
