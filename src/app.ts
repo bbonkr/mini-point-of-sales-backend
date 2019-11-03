@@ -15,7 +15,7 @@ import { Roles } from './@typings/enums/Roles';
 import { Store } from './entities/Store';
 import { errorLogger, errorJsonResult } from './middleware/errorProcess';
 import { getRepository, getManager } from 'typeorm';
-import { typeormConfig } from './config/config';
+import { jwtOptions } from './config/jwt';
 
 export default class App {
     public port: number;
@@ -96,17 +96,20 @@ export default class App {
 
         this.app.use(
             cors({
-                origin: 'http://localhost:3000',
+                origin: jwtOptions.audience, //'http://localhost:3000',
+
                 credentials: true,
             }),
         );
 
         this.app.use(cookieParser(process.env.COOKIE_SECRET));
+        this.app.use(passport.initialize());
+        this.app.use(passport.session());
         this.app.use(
             expressSession({
-                name: this.cookieName,
+                name: process.env.COOKIE_NAME, // this.cookieName,
                 resave: false,
-                saveUninitialized: false,
+                saveUninitialized: true,
                 secret: process.env.COOKIE_SECRET,
                 cookie: {
                     httpOnly: true,
@@ -115,9 +118,6 @@ export default class App {
                 store: dbSessionStore,
             }),
         );
-
-        this.app.use(passport.initialize());
-        this.app.use(passport.session());
     }
 
     private initializeControllers(controllers: IControllerBase[]) {

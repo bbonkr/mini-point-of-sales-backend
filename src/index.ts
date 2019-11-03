@@ -29,7 +29,7 @@ process.on('exit', () => {
     console.info('App down.');
 });
 
-createConnection(typeormConfig)
+createConnection(typeormConfig[process.env.NODE_ENV || 'development'])
     .then((_) => {
         const app: App = new App(
             [

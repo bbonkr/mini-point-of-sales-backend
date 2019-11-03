@@ -86,7 +86,15 @@ export default () => {
                         req.userInfo = transferUser;
                         req.roles = transferUser.roles;
 
-                        return done(null, transferUser);
+                        req.session.user = transferUser;
+                        req.session.save((err) => {
+                            if (err) {
+                                console.error(err);
+                            }
+
+                            return done(null, transferUser);
+                        });
+                        // return done(null, transferUser);
                     } else {
                         // TODO 시도 횟수 증가
                         return done(null, null, {

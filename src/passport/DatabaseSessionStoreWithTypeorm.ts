@@ -39,7 +39,9 @@ export default class DatabaseSessionStore extends expressSession.Store {
                 },
             })
             .then((session) => {
-                return this.sessionRepository.remove(session);
+                if (session) {
+                    return this.sessionRepository.remove(session);
+                }
             })
             .catch((error) => {
                 console.error(error);
@@ -60,7 +62,7 @@ export default class DatabaseSessionStore extends expressSession.Store {
             .then((session) => {
                 if (session) {
                     const now = new Date();
-                    const expired = session.expire > now;
+                    const expired = session.expire < now;
                     const err: Error | null = expired
                         ? new Error('Session was expired.')
                         : null;

@@ -32,18 +32,55 @@ dotenv.config();
 //     },
 // };
 
-export const typeormConfig: ConnectionOptions = {
-    name: 'default',
-    type: 'mariadb',
-    host: process.env.DB_HOST,
-    port: parseInt(process.env.DB_PORT, 10) || 3306,
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    extra: { charset: 'utf8mb4' },
-    entities: [path.join(__dirname, '../entities/**/*.ts')],
-    logging: true,
-    synchronize: false,
+// export const typeormConfig: ConnectionOptions = {
+//     name: 'default',
+//     type: 'mariadb',
+//     host: process.env.DB_HOST,
+//     port: parseInt(process.env.DB_PORT, 10) || 3306,
+//     username: process.env.DB_USERNAME,
+//     password: process.env.DB_PASSWORD,
+//     database: process.env.DB_DATABASE,
+//     extra: { charset: 'utf8mb4' },
+//     entities: [path.join(__dirname, '../entities/**/*.ts')],
+//     logging: true,
+//     synchronize: false,
+// };
+
+export const typeormConfig: IDatabaseConfig = {
+    development: {
+        name: 'default',
+        type: 'mariadb',
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT, 10) || 3306,
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+        extra: { charset: 'utf8mb4' },
+        entities: [path.join(__dirname, '../entities/**/*.ts')],
+        logging: true,
+        synchronize: false,
+    },
+    production: {
+        name: 'default',
+        type: 'mariadb',
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT, 10) || 3306,
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+        extra: { charset: 'utf8mb4' },
+        entities: [path.join(__dirname, '../entities/**/*.js')],
+        logging: true,
+        synchronize: false,
+    },
+    test: {
+        name: 'default',
+        type: 'sqlite',
+        database: process.env.DB_DATABASE,
+        entities: [path.join(__dirname, '../entities/**/*.ts')],
+        logging: true,
+        synchronize: true,
+    },
 };
 
 // createConnection(typeormConfig);
