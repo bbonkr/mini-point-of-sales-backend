@@ -14,28 +14,29 @@ export const authWithJwt = (
     };
 
     passport.authenticate(strategy, authenticateOptions, (err, token, info) => {
-        if (info) {
-            return res.status(400).json(
-                new JsonResult({
-                    success: false,
-                    data: {
-                        code: 'ERR-008',
-                        message: info.message,
-                    },
-                    message: info.message,
-                }),
-            );
-        }
+        // if (info) {
+        //     return res.status(400).json(
+        //         new JsonResult({
+        //             success: false,
+        //             data: {
+        //                 code: 'ERR-008',
+        //                 message: info.message,
+        //             },
+        //             message: info.message,
+        //         }),
+        //     );
+        // }
 
         if (err || !token) {
+            const message = info.message || 'Please log in.';
             return res.status(401).json(
                 new JsonResult({
                     success: false,
                     data: {
                         code: 'ERR-007',
-                        message: 'Please log in.',
+                        message: message,
                     },
-                    message: 'Please log in.',
+                    message: message,
                 }),
             );
         }

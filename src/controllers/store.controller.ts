@@ -16,6 +16,7 @@ export default class StoreController extends ControllerBase {
 
     protected initializeRoutes(): void {
         this.router.get('/', authWithJwt, authNeedsManager, this.getStores);
+        this.router.get('/:id', authWithJwt, authNeedsManager, this.getStore);
         this.router.post('/', authWithJwt, authNeedsManager, this.createStore);
         this.router.patch(
             '/:id',
@@ -32,18 +33,40 @@ export default class StoreController extends ControllerBase {
     }
 
     /**
-     * 관리매장 목록을 가져옵니다.
-     * GET: /api/store
-     *
-     * @param req
-     * @param res
-     * @param next
+     * @swagger
+     * /api/store:
+     *   get:
+     *     security:
+     *       - bearerAuth: []
+     *     summary: Returns stores list
+     *     tags: [Stores]
+     *     responses:
+     *       200:
+     *         description: store list
+     *         schema:
+     *           $ref: '#/components/jsonResult'
+     *       400:
+     *         $ref: '#/components/res/badRequest'
+     *       401:
+     *         $ref: '#/components/res/unauthorized'
+     *       404:
+     *         $ref: '#/components/res/notFound'
+     *       500:
+     *         $ref: '#/components/res/serverError'
      */
     private async getStores(
         req: express.Request,
         res: express.Response,
         next: express.NextFunction,
     ): Promise<any> {
+        /**
+         * 관리매장 목록을 가져옵니다.
+         * GET: /api/store
+         *
+         * @param req
+         * @param res
+         * @param next
+         */
         try {
             const userId = req.userInfo.id || 0;
 
@@ -75,6 +98,40 @@ export default class StoreController extends ControllerBase {
                 new JsonResult({
                     success: true,
                     data: stores,
+                }),
+            );
+        } catch (e) {
+            return next(e);
+        }
+    }
+
+    private async getStore(
+        req: express.Request,
+        res: express.Response,
+        next: express.NextFunction,
+    ): Promise<any> {
+        try {
+            const id = req.params.id;
+            if (id) {
+                const storeRepository = getRepository(Store);
+                const store = await storeRepository
+                    .createQueryBuilder('store')
+                    .where('store.id = :id', { id: id })
+                    .getOne();
+
+                if (store) {
+                    return res.json(
+                        new JsonResult({
+                            success: true,
+                            data: store,
+                        }),
+                    );
+                }
+            }
+            return res.status(400).json(
+                new JsonResult({
+                    success: false,
+                    message: '잘못된 요청입니다.',
                 }),
             );
         } catch (e) {

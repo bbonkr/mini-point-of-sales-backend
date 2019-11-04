@@ -25,35 +25,6 @@ export default () => {
             try {
                 const { username } = payload;
 
-                // User.findOne({
-                //     where: {
-                //         username: username,
-                //     },
-                //     attributes: ['id', 'username', 'email', 'displayName'],
-                //     include: [{ model: Role }, { model: Store }],
-                // })
-                //     .then((user) => {
-                //         if (!user) {
-                //             throw new Error(
-                //                 'could not find a account information.',
-                //             );
-                //         }
-
-                //         req.user = {
-                //             id: user.id,
-                //             username: user.username,
-                //         };
-                //         req.userInfo = user;
-                //         req.roles = user.roles;
-
-                //         done(null, user, null);
-                //     })
-                //     .catch((err: Error) => {
-                //         done(err, null, {
-                //             message: err.message,
-                //         });
-                //     });
-
                 const user = await userRepository.findOne({
                     where: { username: username },
                     select: ['id', 'username', 'email', 'displayName'],

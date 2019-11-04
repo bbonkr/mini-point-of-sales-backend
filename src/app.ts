@@ -7,6 +7,7 @@ import bcrypt from 'bcrypt';
 import passport from 'passport';
 import local from './passport/local';
 import jwt from './passport/jwt';
+import swaggerUi from 'swagger-ui-express';
 import DatabaseSessionStore from './passport/DatabaseSessionStoreWithTypeorm';
 import { IControllerBase } from './@typings/IControllerBase';
 import { User } from './entities/User';
@@ -16,6 +17,7 @@ import { Store } from './entities/Store';
 import { errorLogger, errorJsonResult } from './middleware/errorProcess';
 import { getRepository, getManager } from 'typeorm';
 import { jwtOptions } from './config/jwt';
+import { swaggerSpec } from './config/swaggerSepc';
 
 export default class App {
     public port: number;
@@ -97,7 +99,6 @@ export default class App {
         this.app.use(
             cors({
                 origin: jwtOptions.audience, //'http://localhost:3000',
-
                 credentials: true,
             }),
         );
@@ -117,6 +118,12 @@ export default class App {
                 },
                 store: dbSessionStore,
             }),
+        );
+
+        this.app.use(
+            '/api-docs',
+            swaggerUi.serve,
+            swaggerUi.setup(swaggerSpec),
         );
     }
 
