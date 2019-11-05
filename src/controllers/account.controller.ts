@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Response, NextFunction } from 'express';
 import passport from 'passport';
 import jsonwebtoken from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
@@ -11,8 +11,10 @@ import { Roles } from '../@typings/enums/Roles';
 import { User } from '../entities/User';
 import { Role } from '../entities/Role';
 import { getRepository, getManager } from 'typeorm';
+import { authWithJwt } from '../middleware/authWithJwt';
+import { authNeedsSystem } from '../middleware/authAsRole';
 
-export default class AccountController extends ControllerBase {
+export class AccountController extends ControllerBase {
     public getPath(): string {
         return '/api/account';
     }
@@ -21,6 +23,13 @@ export default class AccountController extends ControllerBase {
         this.router.post('/signin', this.signin);
         this.router.post('/signout', this.signout);
         this.router.post('/register', this.register);
+
+        this.router.get(
+            '/users',
+            authWithJwt,
+            authNeedsSystem,
+            this.getUsers.bind(this),
+        );
     }
 
     /**
@@ -209,6 +218,30 @@ export default class AccountController extends ControllerBase {
             return res.status(201).json(
                 new JsonResult({
                     success: true,
+                }),
+            );
+        } catch (err) {
+            return next(err);
+        }
+    }
+
+    private async getUsers(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<any> {
+        try {
+            const userRepository = getRepository(User);
+
+            const users = userRepository
+                .createQueryBuilder('user')
+                .select(['user.id', 'user.username', 'user.displayName'])
+                .getMany();
+
+            return res.json(
+                new JsonResult({
+                    success: true,
+                    data: users,
                 }),
             );
         } catch (err) {

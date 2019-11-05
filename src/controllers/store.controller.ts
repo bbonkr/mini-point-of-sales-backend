@@ -1,4 +1,4 @@
-import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { ControllerBase } from '../@typings/ControllerBase';
 import { authWithJwt } from '../middleware/authWithJwt';
 import { JsonResult } from '../@typings/JsonResult';
@@ -9,26 +9,48 @@ import { Store } from '../entities/Store';
 import { User } from '../entities/User';
 import { getRepository, getManager } from 'typeorm';
 
-export default class StoreController extends ControllerBase {
+export class StoreController extends ControllerBase {
     public getPath(): string {
         return '/api/store';
     }
 
     protected initializeRoutes(): void {
-        this.router.get('/', authWithJwt, authNeedsManager, this.getStores);
-        this.router.get('/:id', authWithJwt, authNeedsManager, this.getStore);
-        this.router.post('/', authWithJwt, authNeedsManager, this.createStore);
+        this.router.get(
+            '/',
+            authWithJwt,
+            authNeedsManager,
+            this.getStores.bind(this),
+        );
+        this.router.get(
+            '/:id',
+            authWithJwt,
+            authNeedsManager,
+            this.getStore.bind(this),
+        );
+        this.router.post(
+            '/',
+            authWithJwt,
+            authNeedsManager,
+            this.createStore.bind(this),
+        );
         this.router.patch(
             '/:id',
             authWithJwt,
             authNeedsManager,
-            this.updateStore,
+            this.updateStore.bind(this),
         );
         this.router.delete(
             '/:id',
             authWithJwt,
             authNeedsManager,
-            this.deleteStore,
+            this.deleteStore.bind(this),
+        );
+
+        this.router.patch(
+            '/:store/manager',
+            authWithJwt,
+            authNeedsManager,
+            this.addManager.bind(this),
         );
     }
 
@@ -55,9 +77,9 @@ export default class StoreController extends ControllerBase {
      *         $ref: '#/components/res/serverError'
      */
     private async getStores(
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
+        req: Request,
+        res: Response,
+        next: NextFunction,
     ): Promise<any> {
         /**
          * 관리매장 목록을 가져옵니다.
@@ -106,18 +128,17 @@ export default class StoreController extends ControllerBase {
     }
 
     private async getStore(
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
+        req: Request,
+        res: Response,
+        next: NextFunction,
     ): Promise<any> {
         try {
-            const id = req.params.id;
-            if (id) {
-                const storeRepository = getRepository(Store);
-                const store = await storeRepository
-                    .createQueryBuilder('store')
-                    .where('store.id = :id', { id: id })
-                    .getOne();
+            const userId = req.user.id;
+            const storeId = req.params.id;
+            console.info('this', this);
+
+            if (userId && storeId) {
+                const store = await this.getStoreData(userId, storeId);
 
                 if (store) {
                     return res.json(
@@ -128,6 +149,7 @@ export default class StoreController extends ControllerBase {
                     );
                 }
             }
+
             return res.status(400).json(
                 new JsonResult({
                     success: false,
@@ -152,9 +174,9 @@ export default class StoreController extends ControllerBase {
      * @param next
      */
     private async createStore(
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
+        req: Request,
+        res: Response,
+        next: NextFunction,
     ): Promise<any> {
         try {
             const { name, businessType } = req.body;
@@ -191,29 +213,34 @@ export default class StoreController extends ControllerBase {
             }
             const savedStore = await storeRepository.save(newStore);
 
-            const addedStore = await storeRepository
-                .createQueryBuilder('store')
-                .innerJoinAndSelect(
-                    'store.administrations',
-                    'administrations',
-                    'administrations.id = :userId',
-                    {
-                        userId: req.user.id,
-                    },
-                )
-                .select([
-                    'store.id',
-                    'store.name',
-                    'store.businessType',
-                    'store.validAt',
-                    'store.validUntil',
-                    'administrations.id',
-                    'administrations.username',
-                    'administrations.displayName',
-                    'administrations.email',
-                ])
-                .where('store.id = :storeId', { storeId: savedStore.id })
-                .getOne();
+            // const addedStore = await storeRepository
+            //     .createQueryBuilder('store')
+            //     .innerJoinAndSelect(
+            //         'store.administrations',
+            //         'administrations',
+            //         'administrations.id = :userId',
+            //         {
+            //             userId: req.user.id,
+            //         },
+            //     )
+            //     .select([
+            //         'store.id',
+            //         'store.name',
+            //         'store.businessType',
+            //         'store.validAt',
+            //         'store.validUntil',
+            //         'administrations.id',
+            //         'administrations.username',
+            //         'administrations.displayName',
+            //         'administrations.email',
+            //     ])
+            //     .where('store.id = :storeId', { storeId: savedStore.id })
+            //     .getOne();
+
+            const addedStore = await this.getStoreData(
+                req.user.id,
+                savedStore.id,
+            );
 
             return res.json(
                 new JsonResult({
@@ -239,9 +266,9 @@ export default class StoreController extends ControllerBase {
      * @param next
      */
     private async updateStore(
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
+        req: Request,
+        res: Response,
+        next: NextFunction,
     ): Promise<any> {
         try {
             const { id } = req.params;
@@ -287,29 +314,34 @@ export default class StoreController extends ControllerBase {
 
             const savedStore = await storeRepository.save(foundItem);
 
-            const updatedStore = await storeRepository
-                .createQueryBuilder('store')
-                .innerJoinAndSelect(
-                    'store.administrations',
-                    'administrations',
-                    'administrations.id = :userId',
-                    {
-                        userId: req.user.id,
-                    },
-                )
-                .select([
-                    'store.id',
-                    'store.name',
-                    'store.businessType',
-                    'store.validAt',
-                    'store.validUntil',
-                    'administrations.id',
-                    'administrations.username',
-                    'administrations.displayName',
-                    'administrations.email',
-                ])
-                .where('store.id = :storeId', { storeId: savedStore.id })
-                .getOne();
+            // const updatedStore = await storeRepository
+            //     .createQueryBuilder('store')
+            //     .innerJoinAndSelect(
+            //         'store.administrations',
+            //         'administrations',
+            //         'administrations.id = :userId',
+            //         {
+            //             userId: req.user.id,
+            //         },
+            //     )
+            //     .select([
+            //         'store.id',
+            //         'store.name',
+            //         'store.businessType',
+            //         'store.validAt',
+            //         'store.validUntil',
+            //         'administrations.id',
+            //         'administrations.username',
+            //         'administrations.displayName',
+            //         'administrations.email',
+            //     ])
+            //     .where('store.id = :storeId', { storeId: savedStore.id })
+            //     .getOne();
+
+            const updatedStore = await this.getStoreData(
+                req.user.id,
+                savedStore.id,
+            );
 
             return res.json(
                 new JsonResult({
@@ -331,9 +363,9 @@ export default class StoreController extends ControllerBase {
      * @param next
      */
     private async deleteStore(
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
+        req: Request,
+        res: Response,
+        next: NextFunction,
     ): Promise<any> {
         try {
             const { id } = req.params;
@@ -375,10 +407,75 @@ export default class StoreController extends ControllerBase {
         }
     }
 
+    private async addManager(
+        req: Request,
+        res: Response,
+        next: NextFunction,
+    ): Promise<any> {
+        try {
+            const currentUserId: string = req.user.id;
+            const storeId: string = req.params.store;
+            const addIds: string[] = req.body.add || [];
+            const removeIds: string[] = req.body.remove || [];
+
+            if (storeId && addIds.length + removeIds.length) {
+                const storeRepository = getRepository(Store);
+                const userRepository = getRepository(User);
+
+                const addToUsers: User[] = await Promise.all(
+                    addIds.map((id) => {
+                        return userRepository.findOne(id);
+                    }),
+                );
+
+                const removeToUsers: User[] = await Promise.all(
+                    removeIds.map((id) => {
+                        return userRepository.findOne(id);
+                    }),
+                );
+
+                const store = await storeRepository
+                    .createQueryBuilder('store')
+                    .leftJoin('administrators', 'administrator')
+                    .where('store.id = :storeId', { storeId: storeId })
+                    .getOne();
+
+                if (addToUsers) {
+                    store.administrations = [
+                        ...store.administrations,
+                        ...addToUsers,
+                    ];
+                }
+
+                if (removeToUsers) {
+                    store.administrations = store.administrations.filter((v) =>
+                        removeToUsers.includes(v),
+                    );
+                }
+
+                await storeRepository.save(store);
+
+                const updatedStore = await this.getStoreData(
+                    currentUserId,
+                    storeId,
+                );
+
+                return res.json(
+                    new JsonResult({
+                        success: true,
+                        data: updatedStore,
+                    }),
+                );
+            }
+        } catch (err) {
+            return next(err);
+        }
+    }
+
     private async applicationToUse(
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
+        req: Request,
+        res: Response,
+        next: NextFunction,
     ): Promise<any> {
         try {
             // 신청 :( 모델이 없음!
@@ -394,9 +491,9 @@ export default class StoreController extends ControllerBase {
      * @param next
      */
     private async approveToUse(
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
+        req: Request,
+        res: Response,
+        next: NextFunction,
     ): Promise<any> {
         try {
             // 신청 :( 모델이 없음!
@@ -412,14 +509,51 @@ export default class StoreController extends ControllerBase {
      * @param next
      */
     private async rejectToUse(
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
+        req: Request,
+        res: Response,
+        next: NextFunction,
     ): Promise<any> {
         try {
             // 신청 :( 모델이 없음!
         } catch (e) {
             return next(e);
         }
+    }
+
+    /**
+     * 매장 정보
+     * @param userId 사용자 식별자
+     * @param storeId 매장 식별자
+     */
+    private async getStoreData(
+        userId: string,
+        storeId: string,
+    ): Promise<Store> {
+        const storeRepository = getRepository(Store);
+        const store = await storeRepository
+            .createQueryBuilder('store')
+            .innerJoinAndSelect(
+                'store.administrations',
+                'administrations',
+                'administrations.id = :userId',
+                {
+                    userId: userId,
+                },
+            )
+            .select([
+                'store.id',
+                'store.name',
+                'store.businessType',
+                'store.validAt',
+                'store.validUntil',
+                'administrations.id',
+                'administrations.username',
+                'administrations.displayName',
+                'administrations.email',
+            ])
+            .where('store.id = :storeId', { storeId: storeId })
+            .getOne();
+
+        return store;
     }
 }

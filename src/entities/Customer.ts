@@ -8,10 +8,14 @@ import {
 } from 'typeorm';
 import { Payment } from './Payment';
 import { Store } from './Store';
-import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
+import {
+    PrimaryEntityBase,
+    IPrimaryEntityBase,
+} from '../@typings/Entity/PrimaryEntityBase';
+import { ICustomer } from '../@typings/Entity/Entities';
 
 @Entity({ name: 'Customers' })
-export class Customer extends PrimaryEntityBase {
+export class Customer extends PrimaryEntityBase implements ICustomer {
     @Column({ length: 20, comment: '휴대전화번호', nullable: false })
     public mobile: string;
 

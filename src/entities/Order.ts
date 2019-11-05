@@ -1,18 +1,15 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    OneToMany,
-    ManyToOne,
-    JoinColumn,
-} from 'typeorm';
+import { Entity, Column, OneToMany, ManyToOne, JoinColumn } from 'typeorm';
 import { OrderDetail } from './OrderDetail';
 import { Payment } from './Payment';
 import { Store } from './Store';
-import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
+import {
+    PrimaryEntityBase,
+    IPrimaryEntityBase,
+} from '../@typings/Entity/PrimaryEntityBase';
+import { IOrder } from '../@typings/Entity/Entities';
 
 @Entity({ name: 'Orders' })
-export class Order extends PrimaryEntityBase {
+export class Order extends PrimaryEntityBase implements IOrder {
     @Column({ default: 0, nullable: false, comment: '주문 가격' })
     public amounts: number;
     @Column({ default: 0, nullable: false, comment: '할인 금액' })

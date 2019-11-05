@@ -8,9 +8,10 @@ import {
 import { Store } from './Store';
 import { Order } from './Order';
 import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
+import { IOrderDetail } from '../@typings/Entity/Entities';
 
 @Entity({ name: 'OrderDetails' })
-export class OrderDetail extends PrimaryEntityBase {
+export class OrderDetail extends PrimaryEntityBase implements IOrderDetail {
     @Column({ length: 100, nullable: false, comment: '메뉴 이름' })
     public name: string;
 
@@ -20,7 +21,7 @@ export class OrderDetail extends PrimaryEntityBase {
     @Column({ default: 0, nullable: false, comment: '수량' })
     public quantity: number;
 
-    @Column({ default: 0, nullable: false, comment: '할인' })
+    @Column({ default: 0, nullable: false, comment: '할인 금액' })
     public discount: number;
 
     @Column({ default: false, nullable: false, comment: '포장여부' })

@@ -13,7 +13,7 @@ export default () => {
         secretOrKey: jwtOptions.secret,
         passReqToCallback: true,
     };
-    const userRepository = getManager().getRepository(User);
+    const userRepository = getRepository(User);
 
     const strategy = new Strategy(
         options,

@@ -12,9 +12,10 @@ import { Order } from './Order';
 import { Store } from './Store';
 import { Customer } from './Customer';
 import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
+import { IPayment } from '../@typings/Entity/Entities';
 
 @Entity({ name: 'Payments' })
-export class Payment extends PrimaryEntityBase {
+export class Payment extends PrimaryEntityBase implements IPayment {
     @Column({ default: 0, nullable: false, comment: '주문금액' })
     public orderAmount: number;
     @Column({ default: 0, nullable: false, comment: '사용 포인트' })

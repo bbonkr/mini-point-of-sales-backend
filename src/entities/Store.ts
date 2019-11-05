@@ -13,9 +13,10 @@ import { Menu } from './Menu';
 import { User } from './User';
 import { Customer } from './Customer';
 import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
+import { IStore } from '../@typings/Entity/Entities';
 
 @Entity({ name: 'Stores' })
-export class Store extends PrimaryEntityBase {
+export class Store extends PrimaryEntityBase implements IStore {
     @Column({ length: 100, nullable: false, comment: '매장 이름' })
     public name!: string;
 

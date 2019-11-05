@@ -8,9 +8,10 @@ import {
 } from 'typeorm';
 import { User } from './User';
 import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
+import { IRole } from '../@typings/Entity/Entities';
 
 @Entity({ name: 'Roles' })
-export class Role extends PrimaryEntityBase {
+export class Role extends PrimaryEntityBase implements IRole {
     @Column({ length: 100, nullable: false, comment: '역할이름' })
     public name: string;
 

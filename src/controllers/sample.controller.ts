@@ -4,7 +4,7 @@ import { authWithJwt } from '../middleware/authWithJwt';
 import { JsonResult } from '../@typings/JsonResult';
 import { authNeedsManager } from '../middleware/authAsRole';
 
-export default class SampleController extends ControllerBase {
+export class SampleController extends ControllerBase {
     public getPath(): string {
         return '/api/sample';
     }

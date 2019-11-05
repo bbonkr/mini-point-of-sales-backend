@@ -9,19 +9,25 @@ import {
 import { Role } from './Role';
 import { Store } from './Store';
 import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
+import { IUser } from '../@typings/Entity/Entities';
 
 @Entity({ name: 'Users' })
-export class User extends PrimaryEntityBase {
+export class User extends PrimaryEntityBase implements IUser {
     @Column({ length: 100, nullable: false, unique: true })
     public username: string;
+
     @Column({ length: 100, nullable: false })
     public displayName: string;
+
     @Column({ length: 100, nullable: false, unique: true })
     public email: string;
+
     @Column({ length: 500, nullable: false })
     public password: string;
+
     @Column({ default: false, nullable: false })
     public isEmailConfirmed: boolean;
+
     @Column({ length: 500, nullable: true })
     public photo: string;
 
