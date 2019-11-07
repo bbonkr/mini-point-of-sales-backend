@@ -1,10 +1,4 @@
-import {
-    Entity,
-    PrimaryGeneratedColumn,
-    Column,
-    OneToMany,
-    ManyToMany,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToMany } from 'typeorm';
 import { BusinessTypes } from '../@typings/enums/BusinessTypes';
 import { Payment } from './Payment';
 import { OrderDetail } from './OrderDetail';
@@ -14,6 +8,7 @@ import { User } from './User';
 import { Customer } from './Customer';
 import { PrimaryEntityBase } from '../@typings/Entity/PrimaryEntityBase';
 import { IStore } from '../@typings/Entity/Entities';
+import { StorePeriod } from './StorePeriod';
 
 @Entity({ name: 'Stores' })
 export class Store extends PrimaryEntityBase implements IStore {
@@ -50,4 +45,7 @@ export class Store extends PrimaryEntityBase implements IStore {
 
     @OneToMany((type) => Menu, (menu) => menu.store)
     public menus: Menu[];
+
+    @OneToMany((type) => StorePeriod, (period) => period.storeId)
+    public periods: StorePeriod[];
 }

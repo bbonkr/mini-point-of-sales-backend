@@ -36,46 +36,29 @@ process.on('exit', () => {
 
 createConnection(typeormConfig[process.env.NODE_ENV || 'development'])
     .then((_) => {
-        const files = glob.sync(
-            path.join(__dirname, 'controllers/**/*.controller.*'),
-        );
-        files.forEach((f) => console.info('controller file=> ', f));
+        const files = glob.sync(path.join(__dirname, 'controllers/**/*.controller.*'));
+        // files.forEach((f) => console.info('controller file=> ', f));
 
         return Promise.all(
             files.map((f) =>
                 import(f).then((m) => {
-                    console.info(
-                        'import file :',
-                        typeof m,
-                        m instanceof ControllerBase,
-                        m,
-                    );
-                    // if (m.hasOwnProperty('default') && m.default.length > 0) {
-                    //     return m.default[0] as IControllerBase;
-                    // }
+                    // console.info('import file :', typeof m, m instanceof ControllerBase, m);
                     return m;
                 }),
             ),
         );
     })
     .then((controllerDefinintions) => {
-        controllerDefinintions.forEach((d) =>
-            console.info('controller', typeof d, d),
-        );
+        console.info(`Loaded controllers ==> ${controllerDefinintions.length}`);
+        // controllerDefinintions.forEach((d) => console.info('controller', typeof d, d));
 
-        const controllers: ControllerBase[] = controllerDefinintions.map(
-            (d) => {
-                for (const name in d) {
-                    if (d.hasOwnProperty(name)) {
-                        // const instance = Object.create(d[name].prototype);
-                        // instance.constructor.apply(instance);
-                        // return instance as ControllerBase;
-
-                        return new d[name]();
-                    }
+        const controllers: ControllerBase[] = controllerDefinintions.map((d) => {
+            for (const name in d) {
+                if (d.hasOwnProperty(name)) {
+                    return new d[name]();
                 }
-            },
-        );
+            }
+        });
 
         const app: App = new App(
             controllers,

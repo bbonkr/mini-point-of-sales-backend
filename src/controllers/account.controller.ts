@@ -24,12 +24,8 @@ export class AccountController extends ControllerBase {
         this.router.post('/signout', this.signout);
         this.router.post('/register', this.register);
 
-        this.router.get(
-            '/users',
-            authWithJwt,
-            authNeedsSystem,
-            this.getUsers.bind(this),
-        );
+        // TODO 제거
+        this.router.get('/users', authWithJwt, authNeedsSystem, this.getUsers.bind(this));
     }
 
     /**
@@ -43,11 +39,7 @@ export class AccountController extends ControllerBase {
      * @param res
      * @param next
      */
-    private signin(
-        req: Express.Request,
-        res: express.Response,
-        next: express.NextFunction,
-    ): any {
+    private signin(req: Express.Request, res: express.Response, next: express.NextFunction): any {
         passport.authenticate('local', (err, user, info) => {
             if (err) {
                 console.error(err);
@@ -79,11 +71,7 @@ export class AccountController extends ControllerBase {
                         displayName: user.displayName,
                         email: user.email,
                     };
-                    const token = jsonwebtoken.sign(
-                        payload,
-                        jwtOptions.secret,
-                        signOptions,
-                    );
+                    const token = jsonwebtoken.sign(payload, jwtOptions.secret, signOptions);
 
                     return res.json(
                         new JsonResult({
@@ -102,11 +90,7 @@ export class AccountController extends ControllerBase {
         })(req, res, next);
     }
 
-    private signout(
-        req: SessionRequest,
-        res: express.Response,
-        next: express.NextFunction,
-    ): any {
+    private signout(req: SessionRequest, res: express.Response, next: express.NextFunction): any {
         const cookieName = process.env.COOKIE_NAME;
         try {
             req.logout();
@@ -130,11 +114,7 @@ export class AccountController extends ControllerBase {
         }
     }
 
-    private async register(
-        req: SessionRequest,
-        res: express.Response,
-        next: express.NextFunction,
-    ): Promise<any> {
+    private async register(req: SessionRequest, res: express.Response, next: express.NextFunction): Promise<any> {
         const { username, password, email, displayName } = req.body;
 
         try {
@@ -225,11 +205,7 @@ export class AccountController extends ControllerBase {
         }
     }
 
-    private async getUsers(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async getUsers(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             const userRepository = getRepository(User);
 

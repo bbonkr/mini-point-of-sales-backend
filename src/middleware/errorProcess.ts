@@ -4,12 +4,7 @@ import { JsonResult } from '../@typings/JsonResult';
 
 const isProd = process.env.NODE_ENV === 'production';
 
-export const errorLogger = (
-    err: Error,
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
-) => {
+export const errorLogger = (err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error(err);
 
     return next(err);
@@ -32,5 +27,5 @@ export const errorJsonResult = (
         });
     }
 
-    return res.status(error.code).json(JsonResult.getErrorResult(error));
+    return res.status(error.code).json(JsonResult.getError(error));
 };

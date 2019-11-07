@@ -1,6 +1,7 @@
 import { IPrimaryEntityBase } from './PrimaryEntityBase';
 import { PaymentMethod } from '../enums/paymentMethod';
 import { BusinessTypes } from '../enums/BusinessTypes';
+import { Store } from '../../entities/Store';
 
 export interface ICustomer extends IPrimaryEntityBase {
     /**
@@ -150,6 +151,18 @@ export interface IStore extends IPrimaryEntityBase {
     orders?: IOrder[];
 
     menus?: IMenu[];
+}
+
+export interface IStorePeriod extends IPrimaryEntityBase {
+    /** 유효기간 시작 */
+
+    start: Date;
+    /** 유효기간 종료 */
+    end: Date;
+
+    storeId: string;
+
+    store: Store;
 }
 
 export interface IUser extends IPrimaryEntityBase {

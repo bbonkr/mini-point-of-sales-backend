@@ -15,43 +15,13 @@ export class StoreController extends ControllerBase {
     }
 
     protected initializeRoutes(): void {
-        this.router.get(
-            '/',
-            authWithJwt,
-            authNeedsManager,
-            this.getStores.bind(this),
-        );
-        this.router.get(
-            '/:id',
-            authWithJwt,
-            authNeedsManager,
-            this.getStore.bind(this),
-        );
-        this.router.post(
-            '/',
-            authWithJwt,
-            authNeedsManager,
-            this.createStore.bind(this),
-        );
-        this.router.patch(
-            '/:id',
-            authWithJwt,
-            authNeedsManager,
-            this.updateStore.bind(this),
-        );
-        this.router.delete(
-            '/:id',
-            authWithJwt,
-            authNeedsManager,
-            this.deleteStore.bind(this),
-        );
+        this.router.get('/', authWithJwt, authNeedsManager, this.getStores.bind(this));
+        this.router.get('/:id', authWithJwt, authNeedsManager, this.getStore.bind(this));
+        this.router.post('/', authWithJwt, authNeedsManager, this.createStore.bind(this));
+        this.router.patch('/:id', authWithJwt, authNeedsManager, this.updateStore.bind(this));
+        this.router.delete('/:id', authWithJwt, authNeedsManager, this.deleteStore.bind(this));
 
-        this.router.patch(
-            '/:store/manager',
-            authWithJwt,
-            authNeedsManager,
-            this.addManager.bind(this),
-        );
+        this.router.patch('/:store/manager', authWithJwt, authNeedsManager, this.addManager.bind(this));
     }
 
     /**
@@ -61,6 +31,19 @@ export class StoreController extends ControllerBase {
      *     security:
      *       - bearerAuth: []
      *     summary: Returns stores list
+     *     parameters:
+     *       - in: query
+     *         name: page
+     *         schema:
+     *           type: integer
+     *         required: false
+     *         description: 현재 페이지 Current page of list
+     *       - in: query
+     *         name: size
+     *         schema:
+     *           type: integer
+     *         required: false
+     *         description: 목록에 출력될 항목의 수 Determine items count of list
      *     tags: [Stores]
      *     responses:
      *       200:
@@ -76,11 +59,7 @@ export class StoreController extends ControllerBase {
      *       500:
      *         $ref: '#/components/res/serverError'
      */
-    private async getStores(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async getStores(req: Request, res: Response, next: NextFunction): Promise<any> {
         /**
          * 관리매장 목록을 가져옵니다.
          * GET: /api/store
@@ -90,30 +69,34 @@ export class StoreController extends ControllerBase {
          * @param next
          */
         try {
-            const userId = req.userInfo.id || 0;
+            const userId = req.userInfo.id || '';
+            const page: number = parseInt(req.query.page || '1', 10);
+            const pageSize: number = parseInt(req.query.size || '10', 10);
+
+            const skip: number = (page - 1) * pageSize;
 
             const storeRepository = getManager().getRepository(Store);
             const stores = await storeRepository
                 .createQueryBuilder('store')
-                .innerJoinAndSelect(
-                    'store.administrations',
-                    'administrations',
-                    'administrations.id = :userId',
-                    {
-                        userId: userId,
-                    },
-                )
+                .innerJoinAndSelect('store.administrations', 'includesadmin', 'includesadmin.id = :userId', {
+                    userId: userId,
+                })
+                .leftJoinAndSelect('store.administrations', 'admin')
                 .select([
                     'store.id',
                     'store.name',
                     'store.businessType',
                     'store.validAt',
                     'store.validUntil',
-                    'administrations.id',
-                    'administrations.username',
-                    'administrations.displayName',
-                    'administrations.email',
+                    'store.createdAt',
+                    'admin.id',
+                    'admin.username',
+                    'admin.displayName',
+                    'admin.email',
                 ])
+                .orderBy('store.createdAt', 'ASC')
+                .skip(skip)
+                .take(pageSize)
                 .getMany();
 
             return res.json(
@@ -127,15 +110,10 @@ export class StoreController extends ControllerBase {
         }
     }
 
-    private async getStore(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async getStore(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             const userId = req.user.id;
             const storeId = req.params.id;
-            console.info('this', this);
 
             if (userId && storeId) {
                 const store = await this.getStoreData(userId, storeId);
@@ -173,11 +151,7 @@ export class StoreController extends ControllerBase {
      * @param res
      * @param next
      */
-    private async createStore(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async createStore(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             const { name, businessType } = req.body;
 
@@ -237,10 +211,7 @@ export class StoreController extends ControllerBase {
             //     .where('store.id = :storeId', { storeId: savedStore.id })
             //     .getOne();
 
-            const addedStore = await this.getStoreData(
-                req.user.id,
-                savedStore.id,
-            );
+            const addedStore = await this.getStoreData(req.user.id, savedStore.id);
 
             return res.json(
                 new JsonResult({
@@ -265,11 +236,7 @@ export class StoreController extends ControllerBase {
      * @param res
      * @param next
      */
-    private async updateStore(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async updateStore(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             const { id } = req.params;
             const { name, businessType } = req.body;
@@ -291,14 +258,9 @@ export class StoreController extends ControllerBase {
             const storeRepository = getManager().getRepository(Store);
             const foundItem = await storeRepository
                 .createQueryBuilder('store')
-                .innerJoinAndSelect(
-                    'store.administrations',
-                    'admin',
-                    'admin.id = :userId',
-                    {
-                        userId: req.userInfo.id,
-                    },
-                )
+                .innerJoinAndSelect('store.administrations', 'admin', 'admin.id = :userId', {
+                    userId: req.userInfo.id,
+                })
                 .where('store.id = :storeId', { storeId: id })
                 .getOne();
 
@@ -338,10 +300,7 @@ export class StoreController extends ControllerBase {
             //     .where('store.id = :storeId', { storeId: savedStore.id })
             //     .getOne();
 
-            const updatedStore = await this.getStoreData(
-                req.user.id,
-                savedStore.id,
-            );
+            const updatedStore = await this.getStoreData(req.user.id, savedStore.id);
 
             return res.json(
                 new JsonResult({
@@ -362,25 +321,16 @@ export class StoreController extends ControllerBase {
      * @param res
      * @param next
      */
-    private async deleteStore(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async deleteStore(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             const { id } = req.params;
 
             const storeRepository = getManager().getRepository(Store);
             const foundItem = await storeRepository
                 .createQueryBuilder('store')
-                .innerJoin(
-                    'store.administrations',
-                    'admin',
-                    'admin.id = :userId',
-                    {
-                        userId: req.userInfo.id,
-                    },
-                )
+                .innerJoin('store.administrations', 'admin', 'admin.id = :userId', {
+                    userId: req.userInfo.id,
+                })
                 .where('store.id = :storeId', { storeId: id })
                 .getOne();
 
@@ -407,11 +357,7 @@ export class StoreController extends ControllerBase {
         }
     }
 
-    private async addManager(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async addManager(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             const currentUserId: string = req.user.id;
             const storeId: string = req.params.store;
@@ -422,43 +368,43 @@ export class StoreController extends ControllerBase {
                 const storeRepository = getRepository(Store);
                 const userRepository = getRepository(User);
 
+                const store = await storeRepository.findOne({ id: storeId });
+
                 const addToUsers: User[] = await Promise.all(
                     addIds.map((id) => {
-                        return userRepository.findOne(id);
+                        return userRepository.findOne({ id: id }, { relations: ['stores'] });
                     }),
                 );
 
                 const removeToUsers: User[] = await Promise.all(
                     removeIds.map((id) => {
-                        return userRepository.findOne(id);
+                        return userRepository.findOne({ id: id }, { relations: ['stores'] });
                     }),
                 );
 
-                const store = await storeRepository
-                    .createQueryBuilder('store')
-                    .leftJoin('administrators', 'administrator')
-                    .where('store.id = :storeId', { storeId: storeId })
-                    .getOne();
-
-                if (addToUsers) {
-                    store.administrations = [
-                        ...store.administrations,
-                        ...addToUsers,
-                    ];
-                }
-
-                if (removeToUsers) {
-                    store.administrations = store.administrations.filter((v) =>
-                        removeToUsers.includes(v),
+                if (addToUsers && addToUsers.length > 0) {
+                    await Promise.all(
+                        addToUsers
+                            .filter((user) => !user.stores.map((s) => s.id).includes(store.id))
+                            .map((user) => {
+                                user.stores.push(store);
+                                return userRepository.save(user);
+                            }),
                     );
                 }
 
-                await storeRepository.save(store);
+                if (removeToUsers && removeToUsers.length > 0) {
+                    await Promise.all(
+                        removeToUsers
+                            .filter((user) => user.stores.map((s) => s.id).includes(store.id))
+                            .map((user) => {
+                                user.stores = user.stores.filter((s) => s.id !== store.id);
+                                return userRepository.save(user);
+                            }),
+                    );
+                }
 
-                const updatedStore = await this.getStoreData(
-                    currentUserId,
-                    storeId,
-                );
+                const updatedStore = await this.getStoreData(currentUserId, storeId);
 
                 return res.json(
                     new JsonResult({
@@ -472,11 +418,7 @@ export class StoreController extends ControllerBase {
         }
     }
 
-    private async applicationToUse(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async applicationToUse(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             // 신청 :( 모델이 없음!
         } catch (e) {
@@ -490,11 +432,7 @@ export class StoreController extends ControllerBase {
      * @param res
      * @param next
      */
-    private async approveToUse(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async approveToUse(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             // 신청 :( 모델이 없음!
         } catch (e) {
@@ -508,11 +446,7 @@ export class StoreController extends ControllerBase {
      * @param res
      * @param next
      */
-    private async rejectToUse(
-        req: Request,
-        res: Response,
-        next: NextFunction,
-    ): Promise<any> {
+    private async rejectToUse(req: Request, res: Response, next: NextFunction): Promise<any> {
         try {
             // 신청 :( 모델이 없음!
         } catch (e) {
@@ -525,31 +459,26 @@ export class StoreController extends ControllerBase {
      * @param userId 사용자 식별자
      * @param storeId 매장 식별자
      */
-    private async getStoreData(
-        userId: string,
-        storeId: string,
-    ): Promise<Store> {
+    private async getStoreData(userId: string, storeId: string): Promise<Store> {
         const storeRepository = getRepository(Store);
         const store = await storeRepository
             .createQueryBuilder('store')
-            .innerJoinAndSelect(
-                'store.administrations',
-                'administrations',
-                'administrations.id = :userId',
-                {
-                    userId: userId,
-                },
-            )
+            // 접근권한이 있는 매장
+            .innerJoinAndSelect('store.administrations', 'administrations', 'administrations.id = :userId', {
+                userId: userId,
+            })
+            // 관리자 목록 포함
+            .leftJoinAndSelect('store.administrations', 'admin')
             .select([
                 'store.id',
                 'store.name',
                 'store.businessType',
                 'store.validAt',
                 'store.validUntil',
-                'administrations.id',
-                'administrations.username',
-                'administrations.displayName',
-                'administrations.email',
+                'admin.id',
+                'admin.username',
+                'admin.displayName',
+                'admin.email',
             ])
             .where('store.id = :storeId', { storeId: storeId })
             .getOne();
