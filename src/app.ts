@@ -50,35 +50,36 @@ export default class App {
     }
 
     private initializePassport() {
-        passport.serializeUser((user: User, done) => {
-            console.debug('passport.serializeUser');
-            return done(null, user.id);
-        });
+        // Session 을 사용하지 않을 때 필요없다.
+        // passport.serializeUser((user: User, done) => {
+        //     console.debug('passport.serializeUser');
+        //     return done(null, user.id);
+        // });
 
-        passport.deserializeUser(async (id: number, done) => {
-            console.debug('>>>> passport.deserializeUser');
-            try {
-                const userRepository = getManager().getRepository(User);
+        // passport.deserializeUser(async (id: number, done) => {
+        //     console.debug('>>>> passport.deserializeUser');
+        //     try {
+        //         const userRepository = getManager().getRepository(User);
 
-                const user = await userRepository
-                    .createQueryBuilder('u')
-                    // .leftJoinAndSelect('p.')
-                    .where('u.id = :id', { id: id })
-                    .select(['id', 'username', 'displayName', 'email', 'photo'])
-                    .getOne();
+        //         const user = await userRepository
+        //             .createQueryBuilder('u')
+        //             // .leftJoinAndSelect('p.')
+        //             .where('u.id = :id', { id: id })
+        //             .select(['id', 'username', 'displayName', 'email', 'photo'])
+        //             .getOne();
 
-                // ({
-                //     where: { id: id },
-                //     select: ['id', 'username', 'displayName', 'email', 'photo'],
-                //     relations: ['']
-                // });
+        //         // ({
+        //         //     where: { id: id },
+        //         //     select: ['id', 'username', 'displayName', 'email', 'photo'],
+        //         //     relations: ['']
+        //         // });
 
-                return done(null, user);
-            } catch (e) {
-                console.error(e);
-                return done(e, null);
-            }
-        });
+        //         return done(null, user);
+        //     } catch (e) {
+        //         console.error(e);
+        //         return done(e, null);
+        //     }
+        // });
 
         local();
 
@@ -105,7 +106,7 @@ export default class App {
 
         this.app.use(cookieParser(process.env.COOKIE_SECRET));
         this.app.use(passport.initialize());
-        this.app.use(passport.session());
+        // this.app.use(passport.session());
         this.app.use(
             expressSession({
                 name: process.env.COOKIE_NAME, // this.cookieName,
@@ -120,11 +121,7 @@ export default class App {
             }),
         );
 
-        this.app.use(
-            '/api-docs',
-            swaggerUi.serve,
-            swaggerUi.setup(swaggerSpec),
-        );
+        this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
     }
 
     private initializeControllers(controllers: IControllerBase[]) {
@@ -133,16 +130,9 @@ export default class App {
         });
 
         // 404
-        this.app.get(
-            '*',
-            (
-                req: express.Request,
-                res: express.Response,
-                next: express.NextFunction,
-            ) => {
-                res.status(404).send({ message: `Not fount: ${req.url}` });
-            },
-        );
+        this.app.get('*', (req: express.Request, res: express.Response, next: express.NextFunction) => {
+            res.status(404).send({ message: `Not fount: ${req.url}` });
+        });
 
         this.app.use(errorLogger);
         this.app.use(errorJsonResult);
@@ -190,10 +180,7 @@ export default class App {
             .findAndCount({ where: { username: systemUsername } })
             .then(async ([user, count]) => {
                 if (count === 0) {
-                    const hashedPassword = await bcrypt.hash(
-                        process.env.SYSTEM_PASSWORD || 'minipos@**@',
-                        12,
-                    );
+                    const hashedPassword = await bcrypt.hash(process.env.SYSTEM_PASSWORD || 'minipos@**@', 12);
 
                     const systemUser = new User();
                     systemUser.username = systemUsername;
