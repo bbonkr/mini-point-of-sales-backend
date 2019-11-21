@@ -1,63 +1,52 @@
-import passport from 'passport';
 import express from 'express';
-import { JsonResult } from '../@typings/JsonResult';
-import { Roles } from '../@typings/enums/Roles';
-import { User } from '../entities/User';
-import { Role } from '../entities/Role';
-// const passport = require('passport');
+import { JsonResult } from '../lib/JsonResult';
+import { RoleNames } from '../lib/enums/Roles';
+import { AuthorizationWithRole } from './AuthorizationWithRole';
 
 export const authNeedsManager = (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
 ) => {
-    const checkRole = new AuthorizationWithRole();
-    const isMemberOf = checkRole.memberOfRole(req.roles, Roles.MANAGER);
+  const checkRole = new AuthorizationWithRole();
+  const isMemberOf = checkRole.memberOfRole(req.user && req.user.roles || [], RoleNames.MANAGER);
 
-    if (!isMemberOf) {
-        return res.status(401).json(
-            new JsonResult({
-                success: false,
-                data: {
-                    code: 'ERR-008',
-                    message: 'Access denied.',
-                },
-                message: 'Access denied.',
-            }),
-        );
-    }
+  if (!isMemberOf) {
+    return res.status(401).json(
+      new JsonResult({
+        success: false,
+        data: {
+          code: 'ERR-008',
+          message: 'Access denied.'
+        },
+        message: 'Access denied.'
+      })
+    );
+  }
 
-    return next();
+  return next();
 };
 
 export const authNeedsSystem = (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
 ) => {
-    const checkRole = new AuthorizationWithRole();
-    const isMemberOf = checkRole.memberOfRole(req.roles, Roles.SYSTEM);
+  const checkRole = new AuthorizationWithRole();
+  const isMemberOf = checkRole.memberOfRole(req.user && req.user.roles || [], RoleNames.SYSTEM);
 
-    if (!isMemberOf) {
-        return res.status(401).json(
-            new JsonResult({
-                success: false,
-                data: {
-                    code: 'ERR-008',
-                    message: 'Access denied.',
-                },
-                message: 'Access denied.',
-            }),
-        );
-    }
+  if (!isMemberOf) {
+    return res.status(401).json(
+      new JsonResult({
+        success: false,
+        data: {
+          code: 'ERR-008',
+          message: 'Access denied.'
+        },
+        message: 'Access denied.'
+      })
+    );
+  }
 
-    return next();
+  return next();
 };
-
-export class AuthorizationWithRole {
-    public memberOfRole(roles: Role[], requireRole: Roles): boolean {
-        const hasRole = roles.find((role) => role.name === requireRole);
-
-        return !!hasRole;
-    }
-}

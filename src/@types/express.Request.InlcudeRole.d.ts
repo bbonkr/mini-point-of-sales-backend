@@ -1,30 +1,18 @@
-import { User as UserModel } from '../entities/User';
-import { Role } from '../entities/Role';
+import { RoleValue } from "../entities/Role.entity";
+import { StoreValue } from "../entities/Store.entity";
+import { UserValue } from "../entities/User.entity";
 
 declare global {
-    namespace Express {
-        export interface User {
-            id: string;
-            username: string;
-        }
-
-        export interface Request {
-            user?: User;
-            userInfo?: UserModel;
-            roles?: Role[];
-        }
+  namespace Express {
+    export interface User extends UserValue {
+      id: string;
+      username: string;
     }
+
+    export interface Request {
+      user?: User;
+      roles?: RoleValue[];
+      stores?: StoreValue[];
+    }
+  }
 }
-
-// declare namespace Express {
-//     export interface User {
-//         id: number;
-//         username: string;
-//     }
-
-//     export interface Request {
-//         user?: User;
-//         userInfo?: UserModel;
-//         roles?: Role[];
-//     }
-// }

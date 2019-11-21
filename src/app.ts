@@ -5,212 +5,171 @@ import morgan from 'morgan';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
 import passport from 'passport';
-import local from './passport/local';
-import jwt from './passport/jwt';
+import { getJwtStrategy } from './passport/getJwtStrategy';
 import swaggerUi from 'swagger-ui-express';
 import DatabaseSessionStore from './passport/DatabaseSessionStoreWithTypeorm';
-import { IControllerBase } from './@typings/IControllerBase';
-import { User } from './entities/User';
-import { Role } from './entities/Role';
-import { Roles } from './@typings/enums/Roles';
-import { Store } from './entities/Store';
+import { User } from './entities/User.entity';
+import { Role } from './entities/Role.entity';
+import { RoleNames } from './lib/enums/Roles';
 import { errorLogger, errorJsonResult } from './middleware/errorProcess';
 import { getRepository, getManager } from 'typeorm';
-import { jwtOptions } from './config/jwt';
+import { jwtOptions } from './config/jwtOptions';
 import { swaggerSpec } from './config/swaggerSepc';
+import { ControllerBase } from './controllers/ControllerBase';
+import { FileLoader } from './lib/FileLoader';
 
 export default class App {
-    public port: number;
-    public readonly cookieName: string = process.env.COOKIE_NAME;
+  public port: number;
+  public readonly cookieName: string = process.env.COOKIE_NAME || '';
 
-    private app: express.Application;
+  private app: express.Application;
 
-    constructor(controllers: IControllerBase[], port?: number) {
-        this.app = express();
-        this.port = port || 3000;
+  constructor(port?: number) {
+    this.app = express();
+    this.port = port || 3000;
 
-        this.initializeDatabaseConnectionWithTypeorm();
-        this.initializePassport();
-        this.initializeMiddlewares();
-        this.initializeControllers(controllers);
-    }
+    this.initializeDatabaseConnectionWithTypeorm();
+    this.initializePassport();
+    this.initializeMiddlewares();
+    this.initializeControllers();
+  }
 
-    public listen(): void {
-        this.app.listen(this.port, () => {
-            console.log(`[APP] App is running on the port ${this.port}`);
-        });
-    }
+  public listen(): void {
+    this.app.listen(this.port, () => {
+      console.log(`[APP] App is running on the port ${this.port}`);
+    });
+  }
 
-    private initializeDatabaseConnectionWithTypeorm(): void {
-        this.initializeRequiredDataRoles();
+  private initializeDatabaseConnectionWithTypeorm(): void {
+    this.initializeRequiredDataRoles();
 
-        this.initializeRequiredDataUsers();
+    this.initializeRequiredDataUsers();
 
-        console.info('Database has been synchronized.');
-    }
+    console.info('Database has been synchronized.');
+  }
 
-    private initializePassport() {
-        passport.serializeUser((user: User, done) => {
-            console.debug('passport.serializeUser');
-            return done(null, user.id);
-        });
+  private initializePassport() {
+    this.app.use(passport.initialize());
 
-        passport.deserializeUser(async (id: number, done) => {
-            console.debug('>>>> passport.deserializeUser');
-            try {
-                const userRepository = getManager().getRepository(User);
+    passport.use(getJwtStrategy());
+  }
 
-                const user = await userRepository
-                    .createQueryBuilder('u')
-                    // .leftJoinAndSelect('p.')
-                    .where('u.id = :id', { id: id })
-                    .select(['id', 'username', 'displayName', 'email', 'photo'])
-                    .getOne();
+  private initializeMiddlewares(): void {
+    const dbSessionStore = new DatabaseSessionStore({
+      expiration: 1000 * 60 * 60 * 24 * 90
+    });
 
-                // ({
-                //     where: { id: id },
-                //     select: ['id', 'username', 'displayName', 'email', 'photo'],
-                //     relations: ['']
-                // });
+    this.app.use(morgan('dev'));
 
-                return done(null, user);
-            } catch (e) {
-                console.error(e);
-                return done(e, null);
-            }
-        });
+    this.app.use(express.json());
+    this.app.use(express.urlencoded({ extended: true }));
+    this.app.use('/', express.static('uploads'));
 
-        local();
+    this.app.use(
+      cors({
+        origin: jwtOptions.audience, //'http://localhost:3000',
+        credentials: true
+      })
+    );
 
-        jwt();
-    }
+    this.app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+  }
 
-    private initializeMiddlewares(): void {
-        const dbSessionStore = new DatabaseSessionStore({
-            expiration: 1000 * 60 * 60 * 24 * 90,
-        });
+  private initializeControllers() {
+    const fileLoader = new FileLoader({
+      pattern: 'controllers/**/*.controller.*[.js|.ts]'
+    });
 
-        this.app.use(morgan('dev'));
-
-        this.app.use(express.json());
-        this.app.use(express.urlencoded({ extended: true }));
-        this.app.use('/', express.static('uploads'));
-
-        this.app.use(
-            cors({
-                origin: jwtOptions.audience, //'http://localhost:3000',
-                credentials: true,
-            }),
-        );
-
-        this.app.use(cookieParser(process.env.COOKIE_SECRET));
-        this.app.use(passport.initialize());
-        this.app.use(passport.session());
-        this.app.use(
-            expressSession({
-                name: process.env.COOKIE_NAME, // this.cookieName,
-                resave: false,
-                saveUninitialized: true,
-                secret: process.env.COOKIE_SECRET,
-                cookie: {
-                    httpOnly: true,
-                    secure: false, // https 사용시 true
-                },
-                store: dbSessionStore,
-            }),
-        );
-
-        this.app.use(
-            '/api-docs',
-            swaggerUi.serve,
-            swaggerUi.setup(swaggerSpec),
-        );
-    }
-
-    private initializeControllers(controllers: IControllerBase[]) {
+    fileLoader
+      .load<ControllerBase>()
+      .then(controllers => {
         controllers.forEach((controller, index) => {
-            this.app.use(controller.getPath(), controller.getRouter());
+          this.app.use(controller.getPath(), controller.getRouter());
         });
 
         // 404
         this.app.get(
-            '*',
-            (
-                req: express.Request,
-                res: express.Response,
-                next: express.NextFunction,
-            ) => {
-                res.status(404).send({ message: `Not fount: ${req.url}` });
-            },
+          '*',
+          (
+            req: express.Request,
+            res: express.Response,
+            next: express.NextFunction
+          ) => {
+            res.status(404).send({ message: `Not fount: ${req.url}` });
+          }
         );
 
         this.app.use(errorLogger);
         this.app.use(errorJsonResult);
+      })
+      .catch(err => {
+        console.error(err);
+      });
+  }
+
+  private initializeRequiredDataRoles(): number {
+    let roleCount: number = 0;
+    const roleRepository = getManager().getRepository(Role);
+
+    roleRepository
+      .createQueryBuilder('r')
+      .getCount()
+      .then(count => {
+        roleCount = count;
+      })
+      .catch(err => {
+        console.error(err);
+      });
+
+    if (roleCount === 0) {
+      const systemRole = new Role();
+      systemRole.name = RoleNames.SYSTEM;
+      const managerRole = new Role();
+      managerRole.name = RoleNames.MANAGER;
+
+      roleRepository
+        .insert([systemRole, managerRole])
+        .then(result => {
+          roleCount = result.identifiers.length;
+        })
+        .catch(err => {
+          console.error(err);
+        });
     }
 
-    private initializeRequiredDataRoles(): number {
-        let roleCount: number = 0;
-        const roleRepository = getManager().getRepository(Role);
+    return roleCount;
+  }
 
-        roleRepository
-            .createQueryBuilder('r')
-            .getCount()
-            .then((count) => {
-                roleCount = count;
-            })
-            .catch((err) => {
-                console.error(err);
-            });
+  private initializeRequiredDataUsers(): number {
+    const systemUsername = process.env.SYSTEM_USERNAME || 'agent';
 
-        if (roleCount === 0) {
-            const systemRole = new Role();
-            systemRole.name = Roles.SYSTEM;
-            const managerRole = new Role();
-            managerRole.name = Roles.MANAGER;
+    let userCount: number = 0;
+    const userRepository = getRepository(User);
+    userRepository
+      .findAndCount({ where: { username: systemUsername } })
+      .then(async ([user, count]) => {
+        if (count === 0) {
+          const hashedPassword = await bcrypt.hash(
+            process.env.SYSTEM_PASSWORD || 'minipos@**@',
+            12
+          );
 
-            roleRepository
-                .insert([systemRole, managerRole])
-                .then((result) => {
-                    roleCount = result.identifiers.length;
-                })
-                .catch((err) => {
-                    console.error(err);
-                });
+          const systemUser = new User();
+          systemUser.username = systemUsername;
+          systemUser.password = hashedPassword;
+          systemUser.displayName = 'system';
+          systemUser.email = process.env.SYSTEM_EMAIL || '';
+
+          const newUser = await userRepository.save(systemUser);
+          if (newUser) {
+            userCount = 1;
+          }
         }
+      })
+      .catch(err => {
+        console.error(err);
+      });
 
-        return roleCount;
-    }
-
-    private initializeRequiredDataUsers(): number {
-        const systemUsername = process.env.SYSTEM_USERNAME || 'agent';
-
-        let userCount: number = 0;
-        const userRepository = getRepository(User);
-        userRepository
-            .findAndCount({ where: { username: systemUsername } })
-            .then(async ([user, count]) => {
-                if (count === 0) {
-                    const hashedPassword = await bcrypt.hash(
-                        process.env.SYSTEM_PASSWORD || 'minipos@**@',
-                        12,
-                    );
-
-                    const systemUser = new User();
-                    systemUser.username = systemUsername;
-                    systemUser.password = hashedPassword;
-                    systemUser.displayName = 'system';
-                    systemUser.email = process.env.SYSTEM_EMAIL;
-
-                    const newUser = await userRepository.save(systemUser);
-                    if (newUser) {
-                        userCount = 1;
-                    }
-                }
-            })
-            .catch((err) => {
-                console.error(err);
-            });
-
-        return userCount;
-    }
+    return userCount;
+  }
 }

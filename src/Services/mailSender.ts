@@ -1,3 +1,3 @@
-export interface IMailSender {
-    send(): Promise<boolean>;
+export interface MailSender {
+  send(): Promise<boolean>;
 }

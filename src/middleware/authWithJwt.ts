@@ -1,46 +1,43 @@
 import passport from 'passport';
 import express from 'express';
-import { JsonResult } from '../@typings/JsonResult';
+import jsonwebtoken from 'jsonwebtoken';
+import {jwtOptions} from '../config/jwtOptions';
+import { JsonResult } from '../lib/JsonResult';
 // const passport = require('passport');
 
 export const authWithJwt = (
-    req: express.Request,
-    res: express.Response,
-    next: express.NextFunction,
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
 ) => {
-    const strategy: string = 'jwt';
+  // const token = req.headers.authorization;
+
+    // try {
+    //     if (!token) {
+    //         throw new HttpStatusError({ code: 401, message: 'Access denied.' });
+    //     }
+    // } catch (error) {
+    //     return next(error);
+    // }
+
+    const strategy = 'jwt';
     const authenticateOptions: passport.AuthenticateOptions = {
         session: false,
     };
 
-    passport.authenticate(strategy, authenticateOptions, (err, token, info) => {
-        // if (info) {
-        //     return res.status(400).json(
-        //         new JsonResult({
-        //             success: false,
-        //             data: {
-        //                 code: 'ERR-008',
-        //                 message: info.message,
-        //             },
-        //             message: info.message,
-        //         }),
-        //     );
-        // }
+    const verifyToken = (token: string): any => {
+        const verifyTokenPromise = new Promise<any>((resolve, reject) => {
+            jsonwebtoken.verify(token, jwtOptions.secret, (err, decoded) => {
+                if (err) {
+                    reject(err);
+                }
+                resolve(token);
+            });
+        });
+    };
 
-        if (err || !token) {
-            const message = info.message || 'Please log in.';
-            return res.status(401).json(
-                new JsonResult({
-                    success: false,
-                    data: {
-                        code: 'ERR-007',
-                        message: message,
-                    },
-                    message: message,
-                }),
-            );
-        }
-
-        return next();
-    })(req, res, next);
+    passport.authenticate(
+        strategy,
+        authenticateOptions,
+    )(req, res, next);
 };
