@@ -1,6 +1,4 @@
 import express from 'express';
-import cookieParser from 'cookie-parser';
-import expressSession from 'express-session';
 import morgan from 'morgan';
 import cors from 'cors';
 import bcrypt from 'bcrypt';
@@ -108,7 +106,7 @@ export default class App {
   }
 
   private initializeRequiredDataRoles(): number {
-    let roleCount: number = 0;
+    let roleCount = 0;
     const roleRepository = getManager().getRepository(Role);
 
     roleRepository
@@ -143,7 +141,7 @@ export default class App {
   private initializeRequiredDataUsers(): number {
     const systemUsername = process.env.SYSTEM_USERNAME || 'agent';
 
-    let userCount: number = 0;
+    let userCount = 0;
     const userRepository = getRepository(User);
     userRepository
       .findAndCount({ where: { username: systemUsername } })
